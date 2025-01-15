@@ -397,8 +397,18 @@ with tabs[4]:
 with tabs[5]:
     st.header("Conclusion")
     st.write("""
-        Ce projet a permis de mieux comprendre les rôles dans l'industrie des données, 
-        ainsi que les compétences et outils associés. 
-        L'outil de recommandation peut désormais aider les apprenants à choisir le poste 
-        qui correspond le mieux à leurs compétences et aspirations.
+        Le projet de création d’un système de recommandation pour les métiers dans l’industrie des données a permis de répondre à plusieurs enjeux essentiels. En analysant les compétences et outils utilisés dans le domaine, nous avons pu identifier des tendances et des profils spécifiques qui permettent d’orienter les apprenants vers les rôles les mieux adaptés à leurs aspirations et leurs connaissances.
+
+Grâce à des techniques de préparation de données avancées et des modèles de machine learning performants, ce système offre des recommandations personnalisées et fiables. Les étapes clés, de l'exploration des données à la modélisation, ont permis de mettre en lumière les aspects cruciaux des différents postes dans le secteur des données, notamment leurs exigences en termes de compétences et de technologies.
+
+Points clés du projet :
+Analyse des données : Une exploration approfondie a révélé des insights précieux sur les rôles et leurs caractéristiques.
+Préparation rigoureuse : Une sélection et une transformation des données soigneuses ont garanti la pertinence et la qualité des entrées pour les modèles.
+Modélisation robuste : L’utilisation de modèles tels que la régression logistique, les forêts aléatoires, et XGBoost a permis de comparer les performances et de choisir les approches les plus adaptées.
+Impact pratique : Ce projet apporte une solution concrète pour aider les apprenants et les professionnels en reconversion à identifier des parcours alignés avec leurs compétences actuelles et leurs objectifs.
+Perspectives et améliorations futures :
+Élargir la base de données : Intégrer davantage de réponses ou des données issues d’autres années pour améliorer la diversité et la précision des recommandations.
+Personnalisation accrue : Incorporer des techniques d’apprentissage profond pour offrir des recommandations encore plus fines et adaptées.
+Application pratique : Déployer le système sous forme d’une plateforme accessible aux apprenants, facilitant ainsi son adoption.
+En conclusion, ce projet constitue un pas significatif vers une meilleure compréhension des opportunités professionnelles dans l’industrie des données, tout en offrant un outil pratique pour accompagner les individus dans leur évolution de carrière.
     """)
