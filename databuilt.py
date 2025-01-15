@@ -23,7 +23,7 @@ from xgboost import XGBClassifier
 st.set_page_config(layout="wide")
 
 # Charger les données
-df = pd.read_csv('/Users/youssef/Desktop/datajob/datajob.csv')
+df = pd.read_csv('datajob.csv')
 data2 = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
 st.logo("logo_datascientest.png")
 # Création des onglets
