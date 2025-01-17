@@ -32,7 +32,8 @@ tabs = st.tabs([
     "Contexte et Objectifs", 
     "Exploration et analyse des données avec DataViz", 
     "Nettoyage et Pre-processing", 
-    "Modélisation", 
+    "Modélisation",
+    "Demo",
     "Conclusion"
 ])
 
@@ -101,10 +102,10 @@ with tabs[2]:
     st.subheader("Visualisation des données")
     menu = st.selectbox(
         "Choisissez un diagramme",
-        ["Diagramme1", "Diagramme2", "Diagramme3", "Diagramme4", "Diagramme5", "Diagramme6", "Diagramme7"]
+        ["Diagramme1: Distribution des métiers (Q5)", "Diagramme2:Niveau de diplôme (Q4) par métiers (Q5)", "Diagramme3:L’âge (Q1) et le genre des répondants (Q2)", "Diagramme4:Tranche d’âge (Q1) par métier (Q5)", "Diagramme5:Les langages de programmation les plus utilisés (Q7)", "Diagramme6:Les IDE les plus utilisés (Q9)", "Diagramme7:Outils de visualisation les plus utilisés (Q14)"]
     )
 
-    if menu == "Diagramme1":
+    if menu == "Diagramme1: Distribution des métiers (Q5)":
         st.write("Distribution des métiers (Q5).")
         job_counts = filtered_df['Q5'].value_counts()
         fig = px.bar(job_counts, x=job_counts.index, y=job_counts.values, labels={'x': "Métier", 'y': "Nombre"})
@@ -120,7 +121,7 @@ with tabs[2]:
             - Cela indique aussi un marché saturé pour ces postes, tandis que les rôles moins représentés (ex. : ingénieurs big data) pourraient offrir des opportunités de spécialisation.  
         """)
 
-    elif menu == "Diagramme2":
+    elif menu == "Diagramme2:Niveau de diplôme (Q4) par métiers (Q5)":
         st.write("Niveau de diplôme (Q4) par métiers (Q5).")
         education_job_counts = filtered_df.groupby(['Q5', 'Q4']).size().reset_index(name='count')
         fig = px.bar(
@@ -140,7 +141,7 @@ with tabs[2]:
             - Pour les entreprises, cela signifie que recruter pour ces rôles exige des budgets compétitifs et des investissements dans la formation continue.  
         """)
 
-    elif menu == "Diagramme3":
+    elif menu == "Diagramme3:L’âge (Q1) et le genre des répondants (Q2):
         st.write("L’âge (Q1) et le genre des répondants (Q2).")
         age_categories = ['18-21', '22-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-69', '70+']
         filtered_df['Q1'] = pd.Categorical(filtered_df['Q1'], categories=age_categories, ordered=True)
@@ -162,7 +163,7 @@ with tabs[2]:
             - Pour les employeurs, cela peut aussi indiquer un besoin de plans de rétention adaptés pour les jeunes professionnels souvent en quête de progression rapide.  
         """)
 
-    elif menu == "Diagramme4":
+    elif menu == "Diagramme4:Tranche d’âge (Q1) par métier (Q5)":
         st.write("Tranche d’âge (Q1) par métier (Q5).")
         fig, ax = plt.subplots(figsize=(15, 8))
         sns.countplot(x='Q5', hue='Q1', data=filtered_df, ax=ax)
@@ -181,7 +182,7 @@ with tabs[2]:
             - Pour les entreprises, cela souligne l'importance de maintenir une culture de l'innovation pour fidéliser ces talents.  
         """)
 
-    elif menu == "Diagramme5":
+    elif menu == "Diagramme5:Les langages de programmation les plus utilisés (Q7)":
         st.write("Les langages de programmation les plus utilisés (Q7).")
         program_columns = [
             "Q7_Part_1", "Q7_Part_2", "Q7_Part_3", "Q7_Part_4", "Q7_Part_5",
@@ -217,7 +218,7 @@ with tabs[2]:
             - Les professionnels ayant des compétences dans ces langages sont mieux positionnés pour répondre aux besoins du marché.  
         """)
 
-    elif menu == "Diagramme6":
+    elif menu == "Diagramme6:Les IDE les plus utilisés (Q9)":
         st.write("Les IDE les plus utilisés (Q9).")
         ide_columns = [
             "Q9_Part_1", "Q9_Part_2", "Q9_Part_3", "Q9_Part_4", "Q9_Part_5",
@@ -255,7 +256,7 @@ with tabs[2]:
             - Cela montre aussi une tendance vers des environnements légers et polyvalents.  
         """)
 
-    elif menu == "Diagramme7":
+    elif menu == "Diagramme7:Outils de visualisation les plus utilisés (Q14)":
         st.write("Outils de visualisation les plus utilisés (Q14).")
         visualization_columns = [
             "Q14_Part_1", "Q14_Part_2", "Q14_Part_3", "Q14_Part_4", "Q14_Part_5",
