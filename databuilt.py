@@ -393,9 +393,45 @@ with tabs[4]:
             st.pyplot()
 
     evaluate_model(model, model_choice)
+with tabs[5]:
+     st.header("Demo : Prédiction de Métier basé sur les compétences techniques")
+
+    st.write("""
+    Entrez vos compétences techniques pour voir quel métier dans le domaine de la Data correspond le mieux à votre profil.
+    """)
+
+    # Collecte des informations de l'utilisateur : compétences techniques, outils et virtualisation
+    outils_utilises = st.multiselect("Outils utilisés :", ['jupyter', 'spyder', 'visual studio', 'Pycharm', 'Notepad++', 'Rstudio', 'Other'])
+    langages_programmation = st.multiselect("Langages de programmation :", ['Python', 'Java', 'C++', 'SQL', 'JavaScript','R','Other'])
+    outils_virtualisation = st.multiselect("Outils de virtualisation :", ['Matplolib', 'Seaborn', 'Plotlib', 'Ggplot/ggplot2', 'Bokeh', ])
+
+    # Préparer un dictionnaire avec les entrées de l'utilisateur (aspects techniques seulement)
+    user_input = {
+        'ide_columns': ','.join(outils_utilises),  # Outils
+        'program_columns': ','.join(langages_programmation),  # Langages
+        'visualization_columns': ','.join(outils_virtualisation)  # Outils de virtualisation
+    }
+
+    # Ajouter les colonnes manquantes avec des valeurs par défaut (par exemple, NaN ou vides)
+    all_columns = ['Q4', 'Q32', 'Q11', 'Q30', 'Q38', 'Q15', 'Q6', 'Q13', 'Q7', 'Q8']
+    for col in all_columns:
+        if col not in user_input:
+            user_input[col] = ''  # Vous pouvez également utiliser `None` ou `np.nan` selon votre prétraitement
+
+    # Créer un DataFrame avec les colonnes manquantes remplies
+    user_df = pd.DataFrame([user_input])
+
+    # Appliquer le même prétraitement que pour les données d'entraînement
+    user_df_transformed = preprocessor.transform(user_df)
+
+    if st.button("Prédire le métier"):
+        # Prédire le métier en fonction des compétences techniques
+        prediction = model.predict(user_df_transformed)
+        predicted_job = prediction[0]
+        st.write(f"Votre métier prédit dans le domaine de la Data est : **{predicted_job}**")
 
 # --- Conclusion ---
-with tabs[5]:
+with tabs[6]:
     st.header("Conclusion")
     st.write("""
         Le projet de création d’un système de recommandation pour les métiers dans l’industrie des données a permis de répondre à plusieurs enjeux essentiels. En analysant les compétences et outils utilisés dans le domaine, nous avons pu identifier des tendances et des profils spécifiques qui permettent d’orienter les apprenants vers les rôles les mieux adaptés à leurs aspirations et leurs connaissances.
