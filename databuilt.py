@@ -141,7 +141,7 @@ with tabs[2]:
             - Pour les entreprises, cela signifie que recruter pour ces rôles exige des budgets compétitifs et des investissements dans la formation continue.  
         """)
 
-    elif menu == "Diagramme3:L’âge (Q1) et le genre des répondants (Q2):
+    elif menu == "Diagramme3:L’âge (Q1) et le genre des répondants (Q2)":
         st.write("L’âge (Q1) et le genre des répondants (Q2).")
         age_categories = ['18-21', '22-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-69', '70+']
         filtered_df['Q1'] = pd.Categorical(filtered_df['Q1'], categories=age_categories, ordered=True)
