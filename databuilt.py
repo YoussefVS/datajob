@@ -394,7 +394,7 @@ with tabs[4]:
 
     evaluate_model(model, model_choice)
 with tabs[5]:
-     st.header("Demo : Prédiction de Métier basé sur les compétences techniques")
+    st.header("Demo : Prédiction de Métier basé sur les compétences techniques")
 
     st.write("""
     Entrez vos compétences techniques pour voir quel métier dans le domaine de la Data correspond le mieux à votre profil.
