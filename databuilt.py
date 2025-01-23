@@ -478,8 +478,8 @@ scaler = StandardScaler()
 
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
-    st.write(f"Après nettoyage, il reste {df.shape[0]} lignes et {df.shape[1]} colonnes.")
 
+   
 # --- Modélisation ---
 with tabs[4]:
     st.header("Modélisation")
