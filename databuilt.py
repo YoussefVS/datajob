@@ -54,10 +54,8 @@ Pour cela, le modèle utilise comme jeu de données, le résultat du sondage kag
     st.subheader (""" Présentation de l’équipe""")
              
     st.write ("""  
-        - Loïs Brignoli 
-        - Matthias Lombart 
-        - Thibaut Moyo 
         - FOFANA Youssouf 
+        - Loïs Brignoli  
               """)
 
     
