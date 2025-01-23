@@ -400,22 +400,6 @@ with tabs[4]:
         else:
             st.error("Les données d'entraînement ne sont pas disponibles. Veuillez les charger et prétraiter.")
 
-
-        # Calculer les courbes ROC uniquement pour les modèles avec predict_proba
-        if y_prob is not None:
-            lb = LabelBinarizer()
-            y_test_bin = lb.fit_transform(y_test)
-            for i in range(len(model.classes_)):
-                fpr, tpr, thresholds = roc_curve(y_test_bin[:, i], y_prob[:, i])
-                plt.plot(fpr, tpr, label=f'{model.classes_[i]} (AUC = {auc(fpr, tpr):.2f})')
-            plt.plot([0, 1], [0, 1], linestyle='--', color='gray')
-            plt.xlabel('False Positive Rate')
-            plt.ylabel('True Positive Rate')
-            plt.title(f'Courbes ROC pour chaque classe - {model_name}')
-            plt.legend(loc="lower right")
-            st.pyplot()
-
-    evaluate_model(model, model_choice)
 with tabs[5]:
     st.header("Demo : Prédiction de Métier basé sur les compétences techniques")
 
