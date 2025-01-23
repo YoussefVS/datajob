@@ -320,29 +320,164 @@ with tabs[3]:
              
 Ces étapes visent à garantir un dataset optimisé pour l’entraînement du modèle tout en éliminant les biais potentiels. """)
     
-    st.write("""   """ )
-    df = df.drop(columns=['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3', 'Q20', 'Q21', 'Q22', 'Q24', 'Q25'])
-    df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
-    df = df.dropna(subset=['Q5'])
+    # --- Nettoyage et Pre-processing --- 
+with tabs[3]:
+    
+    st.header("Nettoyage et Pre-processing")
+    st.write("""  **NETTOYAGE** """ )
+    st.write(""" Pour développer un modèle de machine learning orientant les étudiants vers les métiers de la data, plusieurs étapes de préparation du dataframe ont été réalisées :
 
-    # Préparation des données pour l'entraînement
-    y = df['Q5']
-    X = df.drop('Q5', axis=1)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+-Filtrage des données pertinentes : Suppression des colonnes non pertinentes (Q1, Q2, Q3) et des réponses incompatibles avec l’objectif, comme « Currently not employed » ou « Student ».
+             
+-Traitement des valeurs manquantes : Réduction du dataframe initial (20 036 lignes, 355 colonnes, 6 273 301 NaN) à un dataframe nettoyé (10 717 lignes, 347 colonnes, 3 288 270 NaN). Colonnes avec plus de 33 % de NaN supprimées, et les valeurs manquantes restantes traitées par KNN.
+             
+-Encodage et transformation des données :
+             
+-Regroupement des colonnes à choix multiple en une colonne commune (par ex. Q7).
+             
+-Suppression des colonnes spécifiques (« A » ou « B ») et réorganisation des colonnes.
+             
+-Encodage des variables catégorielles via One-Hot Encoding ou Label Encoding.
+             
+-Normalisation des données avec StandardScaler pour équilibrer les classes.
+             
+Ces étapes visent à garantir un dataset optimisé pour l’entraînement du modèle tout en éliminant les biais potentiels. """)
+    
+    # Supprimer les colonnes spécifiées pour éviter un ML disciminant
+columns_to_drop = ['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3', 'Q20', 'Q21', 'Q22', 'Q24', 'Q25']
+df = df.drop(columns=columns_to_drop, errors='ignore')
 
-    # Création du pipeline de prétraitement
-    columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
-    numeric_columns = X.select_dtypes(include=['float64', 'int64']).columns
 
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('cat', OneHotEncoder(handle_unknown='ignore'), columns_to_encode),
-            ('num', StandardScaler(), numeric_columns)
-        ])
+# Supprimer toutes les colonnes contenant "_A" ou "_B" dans leur nom pour simplifier le traitement
+columns_to_drop = [col for col in df.columns if '_A' in col or '_B' in col]
+df = df.drop(columns=columns_to_drop, errors='ignore')
 
-    X_train_transformed = preprocessor.fit_transform(X_train)
-    X_test_transformed = preprocessor.transform(X_test)
+# supprimer les lignes de Q5 qui contiennenet student ou other ou Currently not employed
+df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
+print(df['Q5'].value_counts())
 
+# Supprimer les lignes avec des NaN dans la colonne 'Q5'
+df = df.dropna(subset=['Q5'])
+
+# diviser le df en 2: df_choix_unique et df_choix_multiple
+df_choix_unique = df.columns[df.nunique()<=3]   # 3 = moalité x + modalité y + Nan
+df_choix_multiple = df.columns[df.nunique()>3]
+
+# Afficher les colonnes
+print(df_choix_multiple.to_list())
+
+# pour chaque colonne de la liste "df_choix_unique", remplacer le Nan par "0" et remplacer la  modalité par "1"
+
+# Parcourir chaque colonne de df_choix_unique
+for col in df_choix_unique:
+    # Remplacer les valeurs NaN par 0
+    df[col] = df[col].fillna(0)
+    # Obtenir la liste des modalités uniques (hors NaN et 0)
+    modalites = df[col].unique()
+    modalites = [modalite for modalite in modalites if modalite != 0 and not pd.isna(modalite)]
+
+    # Remplacer chaque modalité par 1
+    for modalite in modalites:
+        df[col] = df[col].replace(modalite, 1)
+
+df.head()
+
+# separer le df en X et Y pour eviter la fuite de données du onehotencoder
+from sklearn.model_selection import train_test_split
+
+y = df['Q5']
+X = df.drop('Q5', axis=1)
+
+# prompt: reequilibre les classes  de X et y avec oversampling
+
+from imblearn.over_sampling import RandomOverSampler
+
+oversampler = RandomOverSampler(random_state=42) 
+X_resampled, y_resampled = oversampler.fit_resample(X, y)
+
+# Vérifier la distribution après le suréchantillonnage
+print(pd.Series(y_resampled).value_counts())
+
+X = X_resampled
+y = y_resampled
+
+#train test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=48)
+
+print("Train Set:", X_train.shape)
+print("Test Set:", X_test.shape)
+
+# encoder la variable cible avec un onehotencoder puis reduire la dimension à 1 pour les modelisations
+
+from sklearn.preprocessing import OneHotEncoder
+import numpy as np
+
+# Initialiser le OneHotEncoder
+enc = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+
+# Ajuster et transformer la variable cible y_train
+enc.fit(np.array(y_train).reshape(-1, 1))
+y_train_encoded = enc.transform(np.array(y_train).reshape(-1, 1))
+
+# Transformer y_test avec le même encodeur
+y_test_encoded = enc.transform(np.array(y_test).reshape(-1, 1))
+
+# Réduire la dimension à 1 (en utilisant argmax pour obtenir l'index de la classe)
+y_train_encoded = np.argmax(y_train_encoded, axis=1)
+y_test_encoded = np.argmax(y_test_encoded, axis=1)
+
+print("Encoded y_train shape:", y_train_encoded.shape)
+print("Encoded y_test shape:", y_test_encoded.shape)
+
+mapping = {index: label for index, label in enumerate(enc.categories_[0])}
+mapping
+
+# pour les colonnes  'Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38'  de X_train et X_test appliquer un onehotencoder
+
+from sklearn.preprocessing import OneHotEncoder
+
+# definir enc
+enc = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+
+# les colonnes ciblées
+columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
+
+enc.fit(X_train[columns_to_encode])
+
+X_train_encoded = enc.transform(X_train[columns_to_encode])
+X_test_encoded = enc.transform(X_test[columns_to_encode])
+
+encoded_column_names = list(enc.get_feature_names_out(columns_to_encode))
+
+# creer dataframe à partir des arrays
+X_train_encoded_df = pd.DataFrame(X_train_encoded, columns=encoded_column_names, index=X_train.index)
+X_test_encoded_df = pd.DataFrame(X_test_encoded, columns=encoded_column_names, index=X_test.index)
+
+# supprimer les colonnes d'origine
+X_train = X_train.drop(columns=columns_to_encode)
+X_test = X_test.drop(columns=columns_to_encode)
+
+# Prétraitement des données (à personnaliser selon vos besoins)
+if preprocessor is not None:
+            X_train_transformed = preprocessor.fit_transform(X_train)
+            X_test_transformed = preprocessor.transform(X_test)
+else:
+            X_train_transformed, X_test_transformed = X_train, X_test
+
+
+# definir X_train et X_test
+X_train = pd.concat([X_train, X_train_encoded_df], axis=1)
+X_test = pd.concat([X_test, X_test_encoded_df], axis=1)
+
+
+# normaliser avec standarscaler X_train et X_test
+
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
     st.write(f"Après nettoyage, il reste {df.shape[0]} lignes et {df.shape[1]} colonnes.")
 
 # --- Modélisation ---
