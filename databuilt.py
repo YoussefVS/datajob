@@ -492,6 +492,7 @@ with tabs[4]:
             st.error("Les données d'entraînement ne sont pas disponibles. Veuillez les charger et prétraiter.")
 
 
+
 with tabs[5]:
     st.header("Demo : Prédiction de Métier basé sur les compétences techniques")
 
