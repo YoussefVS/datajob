@@ -342,39 +342,58 @@ Ces étapes visent à garantir un dataset optimisé pour l’entraînement du mo
 # --- Modélisation ---
 with tabs[4]:
     st.header("Modélisation")
-    
+
+    # Sélection du modèle
     model_choice = st.selectbox(
         "Choisissez un modèle :",
-        ["Régression Logistique", "Forêt Aléatoire", "Gradient Boosting", "Support Vector Machine", "XGBoost"]
+        ["Arbre de Décision", "Forêt Aléatoire", "XGBoost", "SVM"]
     )
 
+    # Définition des modèles
     models = {
-        "Régression Logistique": LogisticRegression(max_iter=1000),
-        "Forêt Aléatoire": RandomForestClassifier(n_estimators=100),
-        "Gradient Boosting": GradientBoostingClassifier(),
-        "Support Vector Machine": SVC(probability=True),
-        "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='mlogloss')
+        "Arbre de Décision": DecisionTreeClassifier(random_state=42),
+        "Forêt Aléatoire": RandomForestClassifier(random_state=42),
+        "XGBoost": XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss'),
+        "SVM": SVC(random_state=42, probability=True)
     }
 
-    model = models.get(model_choice)
+    model = models[model_choice]
 
+    # Fonction d'évaluation
     def evaluate_model(model, model_name):
-        # Entraîner le modèle
-        model.fit(X_train_transformed, y_train)
-        y_pred = model.predict(X_test_transformed)
+        # Encode the target labels (y_train) before fitting the model
+        le = LabelEncoder()
+        y_train_encoded = le.fit_transform(y_train)  # Encode training labels
+        y_test_encoded = le.transform(y_test)  # Encode test labels
 
-        # Vérifier si le modèle supporte predict_proba
-        y_prob = model.predict_proba(X_test_transformed) if hasattr(model, "predict_proba") else None
+        model.fit(X_train_transformed, y_train_encoded)
+        y_pred_encoded = model.predict(X_test_transformed)
 
-        st.subheader(f"Évaluation du modèle {model_name}")
-        st.write(classification_report(y_test, y_pred, zero_division=0))
+        accuracy = accuracy_score(y_test_encoded, y_pred_encoded)
+        st.subheader(f"Performance du modèle : {model_name}")
+        st.write(f"Précision : {accuracy:.2f}")
+        st.text(classification_report(y_test_encoded, y_pred_encoded, zero_division=0))
 
-        # Afficher la matrice de confusion
-        all_classes = sorted(list(set(y_test).union(set(model.classes_))))
-        cm = confusion_matrix(y_test, y_pred, labels=all_classes)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=all_classes)
-        disp.plot(cmap='Blues')
+        # Matrice de confusion
+        cm = confusion_matrix(y_test_encoded, y_pred_encoded)
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                    xticklabels=le.classes_, 
+                    yticklabels=le.classes_)
+        plt.xlabel('Predicted')
+        plt.ylabel('Actual')
+        plt.title(f'Matrice de Confusion : {model_name}')
         st.pyplot()
+
+        return accuracy
+
+    # Section Modélisation (évaluation sans optimisation)
+    if st.button("Évaluer le modèle sans optimisation", key="evaluate_button"):
+        if 'X_train_transformed' in globals() and 'y_train' in globals():
+            accuracy = evaluate_model(model, model_choice)
+        else:
+            st.error("Les données d'entraînement ne sont pas disponibles. Veuillez les charger et prétraiter.")
+
 
         # Calculer les courbes ROC uniquement pour les modèles avec predict_proba
         if y_prob is not None:
