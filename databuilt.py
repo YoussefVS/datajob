@@ -514,6 +514,21 @@ with tabs[5]:
         'visualization_columns': ','.join(outils_virtualisation)  # Outils de virtualisation
     }
 
+# Définir les colonnes à encoder et les colonnes numériques
+columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
+numeric_columns = X.select_dtypes(include=['float64', 'int64']).columns
+
+# Créer le préprocesseur
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('cat', OneHotEncoder(handle_unknown='ignore'), columns_to_encode),
+        ('num', StandardScaler(), numeric_columns)
+    ])
+
+# Appliquer le préprocesseur aux données d'entraînement et de test
+X_train_transformed = preprocessor.fit_transform(X_train)
+X_test_transformed = preprocessor.transform(X_test)
+
     # Ajouter les colonnes manquantes avec des valeurs par défaut (par exemple, NaN ou vides)
     all_columns = ['Q4', 'Q32', 'Q11', 'Q30', 'Q38', 'Q15', 'Q6', 'Q13', 'Q7', 'Q8']
     for col in all_columns:
