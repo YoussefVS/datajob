@@ -15,7 +15,8 @@ from sklearn.metrics import (
     confusion_matrix,
     ConfusionMatrixDisplay,
     roc_curve,
-    auc
+    auc,
+    accuracy_score
 )
 from xgboost import XGBClassifier
 from sklearn.tree import DecisionTreeClassifier
