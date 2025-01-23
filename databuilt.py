@@ -22,6 +22,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
+from sklearn.preprocessing import LabelEncoder
 
 # Configuration initiale
 st.set_page_config(layout="wide")
