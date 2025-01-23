@@ -15,9 +15,19 @@ from sklearn.metrics import (
     confusion_matrix,
     ConfusionMatrixDisplay,
     roc_curve,
-    auc
+    auc,
+    accuracy_score
 )
 from xgboost import XGBClassifier
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder
+
+# Variables globales
+X_train_transformed, X_test_transformed, y_train, y_test = None, None, None, None
+preprocessor = None  # Définissez votre préprocesseur ici
 
 # Configuration initiale
 st.set_page_config(layout="wide")
@@ -293,104 +303,195 @@ with tabs[2]:
 
 # --- Nettoyage et Pre-processing --- 
 with tabs[3]:
-    
     st.header("Nettoyage et Pre-processing")
     st.write("""  **NETTOYAGE** """ )
     st.write(""" Pour développer un modèle de machine learning orientant les étudiants vers les métiers de la data, plusieurs étapes de préparation du dataframe ont été réalisées :
 
--Filtrage des données pertinentes : Suppression des colonnes non pertinentes (Q1, Q2, Q3) et des réponses incompatibles avec l’objectif, comme « Currently not employed » ou « Student ».
-             
--Traitement des valeurs manquantes : Réduction du dataframe initial (20 036 lignes, 355 colonnes, 6 273 301 NaN) à un dataframe nettoyé (10 717 lignes, 347 colonnes, 3 288 270 NaN). Colonnes avec plus de 33 % de NaN supprimées, et les valeurs manquantes restantes traitées par KNN.
-             
--Encodage et transformation des données :
-             
--Regroupement des colonnes à choix multiple en une colonne commune (par ex. Q7).
-             
--Suppression des colonnes spécifiques (« A » ou « B ») et réorganisation des colonnes.
-             
--Encodage des variables catégorielles via One-Hot Encoding ou Label Encoding.
-             
--Normalisation des données avec StandardScaler pour équilibrer les classes.
-             
-Ces étapes visent à garantir un dataset optimisé pour l’entraînement du modèle tout en éliminant les biais potentiels. """)
+    -Filtrage des données pertinentes : Suppression des colonnes non pertinentes (Q1, Q2, Q3) et des réponses incompatibles avec l’objectif, comme « Currently not employed » ou « Student ».
+                 
+    -Traitement des valeurs manquantes : Réduction du dataframe initial (20 036 lignes, 355 colonnes, 6 273 301 NaN) à un dataframe nettoyé (10 717 lignes, 347 colonnes, 3 288 270 NaN). Colonnes avec plus de 33 % de NaN supprimées, et les valeurs manquantes restantes traitées par KNN.
+                 
+    -Encodage et transformation des données :
+                 
+    -Regroupement des colonnes à choix multiple en une colonne commune (par ex. Q7).
+                 
+    -Suppression des colonnes spécifiques (« A » ou « B ») et réorganisation des colonnes.
+                 
+    -Encodage des variables catégorielles via One-Hot Encoding ou Label Encoding.
+                 
+    -Normalisation des données avec StandardScaler pour équilibrer les classes.
+                 
+    Ces étapes visent à garantir un dataset optimisé pour l’entraînement du modèle tout en éliminant les biais potentiels. """)
     
-    st.write("""   """ )
-    df = df.drop(columns=['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3', 'Q20', 'Q21', 'Q22', 'Q24', 'Q25'])
+    # Supprimer les colonnes spécifiées pour éviter un ML discriminant
+    columns_to_drop = ['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3', 'Q20', 'Q21', 'Q22', 'Q24', 'Q25']
+    df = df.drop(columns=columns_to_drop, errors='ignore')
+
+    # Supprimer toutes les colonnes contenant "_A" ou "_B" dans leur nom pour simplifier le traitement
+    columns_to_drop = [col for col in df.columns if '_A' in col or '_B' in col]
+    df = df.drop(columns=columns_to_drop, errors='ignore')
+
+    # Supprimer les lignes de Q5 qui contiennent 'Student', 'Other' ou 'Currently not employed'
     df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
+    print(df['Q5'].value_counts())
+
+    # Supprimer les lignes avec des NaN dans la colonne 'Q5'
     df = df.dropna(subset=['Q5'])
 
-    # Préparation des données pour l'entraînement
+    # Diviser le df en 2: df_choix_unique et df_choix_multiple
+    df_choix_unique = df.columns[df.nunique() <= 3]  # 3 = modalité x + modalité y + NaN
+    df_choix_multiple = df.columns[df.nunique() > 3]
+
+    # Afficher les colonnes
+    print(df_choix_multiple.to_list())
+
+    # Pour chaque colonne de la liste "df_choix_unique", remplacer les NaN par "0" et remplacer la modalité par "1"
+    for col in df_choix_unique:
+        df[col] = df[col].fillna(0)
+        modalites = df[col].unique()
+        modalites = [modalite for modalite in modalites if modalite != 0 and not pd.isna(modalite)]
+
+        for modalite in modalites:
+            df[col] = df[col].replace(modalite, 1)
+
+    df.head()
+
+    # Séparer le df en X et Y pour éviter la fuite de données du OneHotEncoder
+    from sklearn.model_selection import train_test_split
+
     y = df['Q5']
     X = df.drop('Q5', axis=1)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
 
-    # Création du pipeline de prétraitement
+    # Rééquilibrer les classes avec oversampling
+    from imblearn.over_sampling import RandomOverSampler
+
+    oversampler = RandomOverSampler(random_state=42) 
+    X_resampled, y_resampled = oversampler.fit_resample(X, y)
+
+    # Vérifier la distribution après le suréchantillonnage
+    print(pd.Series(y_resampled).value_counts())
+
+    X = X_resampled
+    y = y_resampled
+
+    # Train test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=48)
+
+    print("Train Set:", X_train.shape)
+    print("Test Set:", X_test.shape)
+
+    # Encoder la variable cible avec un OneHotEncoder puis réduire la dimension à 1 pour les modélisations
+    from sklearn.preprocessing import OneHotEncoder
+    import numpy as np
+
+    # Initialiser le OneHotEncoder
+    enc = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+
+    # Ajuster et transformer la variable cible y_train
+    enc.fit(np.array(y_train).reshape(-1, 1))
+    y_train_encoded = enc.transform(np.array(y_train).reshape(-1, 1))
+
+    # Transformer y_test avec le même encodeur
+    y_test_encoded = enc.transform(np.array(y_test).reshape(-1, 1))
+
+    # Réduire la dimension à 1 (en utilisant argmax pour obtenir l'index de la classe)
+    y_train_encoded = np.argmax(y_train_encoded, axis=1)
+    y_test_encoded = np.argmax(y_test_encoded, axis=1)
+
+    print("Encoded y_train shape:", y_train_encoded.shape)
+    print("Encoded y_test shape:", y_test_encoded.shape)
+
+    mapping = {index: label for index, label in enumerate(enc.categories_[0])}
+    mapping
+
+    # Pour les colonnes 'Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38' de X_train et X_test, appliquer un OneHotEncoder
     columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
-    numeric_columns = X.select_dtypes(include=['float64', 'int64']).columns
+    
+    enc.fit(X_train[columns_to_encode])
 
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('cat', OneHotEncoder(handle_unknown='ignore'), columns_to_encode),
-            ('num', StandardScaler(), numeric_columns)
-        ])
+    X_train_encoded = enc.transform(X_train[columns_to_encode])
+    X_test_encoded = enc.transform(X_test[columns_to_encode])
 
-    X_train_transformed = preprocessor.fit_transform(X_train)
-    X_test_transformed = preprocessor.transform(X_test)
+    encoded_column_names = list(enc.get_feature_names_out(columns_to_encode))
 
-    st.write(f"Après nettoyage, il reste {df.shape[0]} lignes et {df.shape[1]} colonnes.")
+    # Créer dataframe à partir des arrays
+    X_train_encoded_df = pd.DataFrame(X_train_encoded, columns=encoded_column_names, index=X_train.index)
+    X_test_encoded_df = pd.DataFrame(X_test_encoded, columns=encoded_column_names, index=X_test.index)
 
-# --- Modélisation ---
+    # Supprimer les colonnes d'origine
+    X_train = X_train.drop(columns=columns_to_encode)
+    X_test = X_test.drop(columns=columns_to_encode)
+
+    # Prétraitement des données (à personnaliser selon vos besoins)
+    if preprocessor is not None:
+        X_train_transformed = preprocessor.fit_transform(X_train)
+        X_test_transformed = preprocessor.transform(X_test)
+    else:
+        X_train_transformed, X_test_transformed = X_train, X_test
+
+    # Définir X_train et X_test
+    X_train = pd.concat([X_train, X_train_encoded_df], axis=1)
+    X_test = pd.concat([X_test, X_test_encoded_df], axis=1)
+
+    # Normaliser avec StandardScaler X_train et X_test
+    from sklearn.preprocessing import StandardScaler
+
+    scaler = StandardScaler()
+
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+
+   # --- Modélisation ---
 with tabs[4]:
     st.header("Modélisation")
-    
+
+    # Sélection du modèle
     model_choice = st.selectbox(
         "Choisissez un modèle :",
-        ["Régression Logistique", "Forêt Aléatoire", "Gradient Boosting", "Support Vector Machine", "XGBoost"]
+        ["Arbre de Décision", "Forêt Aléatoire", "XGBoost", "SVM"]
     )
 
+    # Définition des modèles
     models = {
-        "Régression Logistique": LogisticRegression(max_iter=1000),
-        "Forêt Aléatoire": RandomForestClassifier(n_estimators=100),
-        "Gradient Boosting": GradientBoostingClassifier(),
-        "Support Vector Machine": SVC(probability=True),
-        "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='mlogloss')
+        "Arbre de Décision": DecisionTreeClassifier(random_state=42),
+        "Forêt Aléatoire": RandomForestClassifier(random_state=42),
+        "XGBoost": XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss'),
+        "SVM": SVC(random_state=42, probability=True)
     }
 
-    model = models.get(model_choice)
+    model = models[model_choice]
 
+    # Fonction d'évaluation
     def evaluate_model(model, model_name):
-        # Entraîner le modèle
         model.fit(X_train_transformed, y_train)
         y_pred = model.predict(X_test_transformed)
 
-        # Vérifier si le modèle supporte predict_proba
-        y_prob = model.predict_proba(X_test_transformed) if hasattr(model, "predict_proba") else None
+        accuracy = accuracy_score(y_test, y_pred)
+        st.subheader(f"Performance du modèle : {model_name}")
+        st.write(f"Précision : {accuracy:.2f}")
+        st.text(classification_report(y_test, y_pred, zero_division=0))
 
-        st.subheader(f"Évaluation du modèle {model_name}")
-        st.write(classification_report(y_test, y_pred, zero_division=0))
-
-        # Afficher la matrice de confusion
-        all_classes = sorted(list(set(y_test).union(set(model.classes_))))
-        cm = confusion_matrix(y_test, y_pred, labels=all_classes)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=all_classes)
-        disp.plot(cmap='Blues')
+        # Matrice de confusion
+        cm = confusion_matrix(y_test, y_pred)
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                    xticklabels=np.unique(y_test), 
+                    yticklabels=np.unique(y_test))
+        plt.xlabel('Predicted')
+        plt.ylabel('Actual')
+        plt.title(f'Matrice de Confusion : {model_name}')
         st.pyplot()
 
-        # Calculer les courbes ROC uniquement pour les modèles avec predict_proba
-        if y_prob is not None:
-            lb = LabelBinarizer()
-            y_test_bin = lb.fit_transform(y_test)
-            for i in range(len(model.classes_)):
-                fpr, tpr, thresholds = roc_curve(y_test_bin[:, i], y_prob[:, i])
-                plt.plot(fpr, tpr, label=f'{model.classes_[i]} (AUC = {auc(fpr, tpr):.2f})')
-            plt.plot([0, 1], [0, 1], linestyle='--', color='gray')
-            plt.xlabel('False Positive Rate')
-            plt.ylabel('True Positive Rate')
-            plt.title(f'Courbes ROC pour chaque classe - {model_name}')
-            plt.legend(loc="lower right")
-            st.pyplot()
+        return accuracy
 
-    evaluate_model(model, model_choice)
+    # Évaluation du modèle sélectionné
+    if st.button("Évaluer le modèle", key="evaluate_button"):
+        if 'X_train_transformed' in globals() and 'y_train' in globals():
+            accuracy = evaluate_model(model, model_choice)
+        else:
+            st.error("Les données d'entraînement ne sont pas disponibles. Veuillez les charger et prétraiter.")
+
+
 with tabs[5]:
     st.header("Demo : Prédiction de Métier basé sur les compétences techniques")
 
