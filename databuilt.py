@@ -434,7 +434,15 @@ mapping = {index: label for index, label in enumerate(enc.categories_[0])}
 mapping
 
 # pour les colonnes  'Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38'  de X_train et X_test appliquer un onehotencoder
+# Création du pipeline de prétraitement
+columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
+numeric_columns = X.select_dtypes(include=['float64', 'int64']).columns
 
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('cat', OneHotEncoder(handle_unknown='ignore'), columns_to_encode),
+        ('num', StandardScaler(), numeric_columns)
+    ])
 from sklearn.preprocessing import OneHotEncoder
 
 # definir enc
