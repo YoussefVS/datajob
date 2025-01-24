@@ -341,8 +341,8 @@ with tabs[3]:
 """)
 
     # Étape 4 : Rééquilibrage des classes
-     st.subheader("4. Rééquilibrage des classes")
-     st.write("""
+    st.subheader("4. Rééquilibrage des classes")
+    st.write("""
     - Un sur-échantillonnage avec la méthode `RandomOverSampler` a été appliqué sur l'ensemble d'entraînement pour équilibrer la répartition des classes de la variable cible (Q5).
     - Cet équilibrage garantit que l'algorithme ne privilégie pas une classe au détriment des autres.
   """)
