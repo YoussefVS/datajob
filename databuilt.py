@@ -514,7 +514,8 @@ with tabs[5]:
         'visualization_columns': ','.join(outils_virtualisation)  # Outils de virtualisation
     }
 
-# Définir les colonnes à encoder et les colonnes numériques
+
+   # Définir les colonnes à encoder et les colonnes numériques
 columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
 numeric_columns = X_train.select_dtypes(include=['float64', 'int64']).columns.tolist()
 
@@ -533,17 +534,18 @@ preprocessor = ColumnTransformer(
 # Appliquer le préprocesseur aux données d'entraînement et de test
 X_train_transformed = preprocessor.fit_transform(X_train)
 X_test_transformed = preprocessor.transform(X_test)
-    # Ajouter les colonnes manquantes avec des valeurs par défaut (par exemple, NaN ou vides)
-    all_columns = ['Q4', 'Q32', 'Q11', 'Q30', 'Q38', 'Q15', 'Q6', 'Q13', 'Q7', 'Q8']
-    for col in all_columns:
-        if col not in user_input:
-            user_input[col] = ''  # Vous pouvez également utiliser `None` ou `np.nan` selon votre prétraitement
 
-    # Créer un DataFrame avec les colonnes manquantes remplies
-    user_df = pd.DataFrame([user_input])
+# Ajouter les colonnes manquantes avec des valeurs par défaut (par exemple, NaN ou vides)
+all_columns = ['Q4', 'Q32', 'Q11', 'Q30', 'Q38', 'Q15', 'Q6', 'Q13', 'Q7', 'Q8']
+for col in all_columns:
+    if col not in user_input:
+        user_input[col] = ''  # Vous pouvez également utiliser `None` ou `np.nan` selon votre prétraitement
 
-    # Appliquer le même prétraitement que pour les données d'entraînement
-    user_df_transformed = preprocessor.transform(user_df)
+# Créer un DataFrame avec les colonnes manquantes remplies
+user_df = pd.DataFrame([user_input])
+
+# Appliquer le même prétraitement que pour les données d'entraînement
+user_df_transformed = preprocessor.transform(user_df)
 
     if st.button("Prédire le métier"):
         # Prédire le métier en fonction des compétences techniques
