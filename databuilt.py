@@ -515,7 +515,18 @@ with tabs[5]:
     }
 
 
-   # Définir les colonnes à encoder et les colonnes numériques
+   # Charger les données et préparer X_train, X_test
+df = pd.read_csv('datajob.csv')
+df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
+
+# Diviser le dataframe en variables explicatives (X) et variable cible (y)
+y = df['Q5']
+X = df.drop('Q5', axis=1)
+
+# Train test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=48)
+
+# Définir les colonnes à encoder et les colonnes numériques
 columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
 numeric_columns = X_train.select_dtypes(include=['float64', 'int64']).columns.tolist()
 
@@ -552,7 +563,6 @@ if st.button("Prédire le métier"):
     prediction = model.predict(user_df_transformed)
     predicted_job = prediction[0]
     st.write(f"Votre métier prédit dans le domaine de la Data est : **{predicted_job}**")
-    
 # --- Conclusion ---
 with tabs[6]:
     st.header("Conclusion")
