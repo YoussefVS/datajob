@@ -547,12 +547,12 @@ user_df = pd.DataFrame([user_input])
 # Appliquer le même prétraitement que pour les données d'entraînement
 user_df_transformed = preprocessor.transform(user_df)
 
-    if st.button("Prédire le métier"):
-        # Prédire le métier en fonction des compétences techniques
-        prediction = model.predict(user_df_transformed)
-        predicted_job = prediction[0]
-        st.write(f"Votre métier prédit dans le domaine de la Data est : **{predicted_job}**")
-
+if st.button("Prédire le métier"):
+    # Prédire le métier en fonction des compétences techniques
+    prediction = model.predict(user_df_transformed)
+    predicted_job = prediction[0]
+    st.write(f"Votre métier prédit dans le domaine de la Data est : **{predicted_job}**")
+    
 # --- Conclusion ---
 with tabs[6]:
     st.header("Conclusion")
