@@ -305,26 +305,63 @@ with tabs[2]:
 
 # --- Nettoyage et Pre-processing --- 
 with tabs[3]:
-    st.header("Nettoyage et Pre-processing")
-    st.write("""  **NETTOYAGE** """ )
-    st.write(""" Pour développer un modèle de machine learning orientant les étudiants vers les métiers de la data, plusieurs étapes de préparation du dataframe ont été réalisées :
+    import streamlit as st
 
-    -Filtrage des données pertinentes : Suppression des colonnes non pertinentes (Q1, Q2, Q3) et des réponses incompatibles avec l’objectif, comme « Currently not employed » ou « Student ».
-                 
-    -Traitement des valeurs manquantes : Réduction du dataframe initial (20 036 lignes, 355 colonnes, 6 273 301 NaN) à un dataframe nettoyé (10 717 lignes, 347 colonnes, 3 288 270 NaN). Colonnes avec plus de 33 % de NaN supprimées, et les valeurs manquantes restantes traitées par KNN.
-                 
-    -Encodage et transformation des données :
-                 
-    -Regroupement des colonnes à choix multiple en une colonne commune (par ex. Q7).
-                 
-    -Suppression des colonnes spécifiques (« A » ou « B ») et réorganisation des colonnes.
-                 
-    -Encodage des variables catégorielles via One-Hot Encoding ou Label Encoding.
-                 
-    -Normalisation des données avec StandardScaler pour équilibrer les classes.
-                 
-    Ces étapes visent à garantir un dataset optimisé pour l’entraînement du modèle tout en éliminant les biais potentiels. """)
-    
+# Texte introductif
+    st.title("Préparation des données pour l'entraînement du modèle")
+    st.write("""
+    La préparation des données est une étape cruciale pour garantir la qualité des prédictions. Voici les étapes réalisées pour transformer le DataFrame brut en un ensemble prêt pour l'entraînement des modèles :
+""")
+
+# Étape 1 : Conservation des données pertinentes
+    st.subheader("1. Conservation des données pertinentes")
+    st.write("""
+    - Suppression des colonnes inutiles comme :
+    - `Time from Start to Finish (seconds)` : temps de réponse.
+    - `Q1`, `Q2`, `Q3` : informations sur l'âge, le sexe et le pays.
+    - Les colonnes des jeux "A" et "B" en raison du grand nombre de valeurs manquantes.
+    - Élimination des lignes où le métier est marqué comme "Currently not employed", "Other" ou "Student".
+    - Résultat : une réduction significative du nombre de colonnes et de valeurs manquantes.
+""")
+
+# Étape 2 : Traitement des valeurs manquantes
+    st.subheader("2. Traitement des valeurs manquantes")
+    st.write("""
+    - Suppression des lignes contenant des valeurs manquantes (NaN) pour garantir la qualité des données.
+    - Après cette étape, le DataFrame ne contient plus de NaN.
+""")
+
+    # Étape 3 : Encodage des valeurs
+    st.subheader("3. Encodage des valeurs")
+    st.write("""
+      - Les colonnes à choix simple (deux modalités ou moins) ont été encodées en valeurs binaires :
+      - `NaN` remplacé par `0`.
+      - Les autres modalités remplacées par `1`.
+    - Les colonnes à choix multiple ont été encodées avec un `OneHotEncoder` pour transformer chaque modalité en colonne distincte.
+""")
+
+    # Étape 4 : Rééquilibrage des classes
+     st.subheader("4. Rééquilibrage des classes")
+     st.write("""
+    - Un sur-échantillonnage avec la méthode `RandomOverSampler` a été appliqué sur l'ensemble d'entraînement pour équilibrer la répartition des classes de la variable cible (Q5).
+    - Cet équilibrage garantit que l'algorithme ne privilégie pas une classe au détriment des autres.
+  """)
+
+    # Étape 5 : Mise à l'échelle des données
+    st.subheader("5. Mise à l’échelle des données")
+      st.write("""
+    - Les données ont été standardisées à l'aide de `StandardScaler` pour :
+    - Mettre toutes les variables sur la même échelle.
+    - Garantir une convergence optimale lors de l'entraînement des modèles.
+  """)
+
+    # Résumé final
+    st.subheader("Résumé des opérations")
+    st.write("""
+    - Les données ont été filtrées, encodées, rééquilibrées et standardisées.
+    - Le DataFrame final est prêt pour l'entraînement des modèles de machine learning.
+""")
+
     # Supprimer les colonnes spécifiées pour éviter un ML discriminant
     columns_to_drop = ['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3', 'Q20', 'Q21', 'Q22', 'Q24', 'Q25']
     df = df.drop(columns=columns_to_drop, errors='ignore')
