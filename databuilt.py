@@ -349,7 +349,7 @@ with tabs[3]:
 
     # Étape 5 : Mise à l'échelle des données 
     st.subheader("5. Mise à l’échelle des données")
-      st.write("""
+    st.write("""
     - Les données ont été standardisées à l'aide de `StandardScaler` pour :
     - Mettre toutes les variables sur la même échelle.
     - Garantir une convergence optimale lors de l'entraînement des modèles.
