@@ -511,10 +511,26 @@ with tabs[5]:
         'program_columns': ','.join(langages_programmation),  # Langages
         'visualization_columns': ','.join(outils_virtualisation)  # Outils de virtualisation
     }
-
     # Charger les données et préparer X_train, X_test
     df = pd.read_csv('datajob.csv')
     df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
+
+    # Supprimer les colonnes spécifiées pour éviter un ML discriminant
+    columns_to_drop = ['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3', 'Q20', 'Q21', 'Q22', 'Q24', 'Q25']
+    df = df.drop(columns=columns_to_drop, errors='ignore')
+
+    # Supprimer toutes les colonnes contenant "_A" ou "_B" dans leur nom pour simplifier le traitement
+    columns_to_drop = [col for col in df.columns if '_A' in col or '_B' in col]
+    df = df.drop(columns=columns_to_drop, errors='ignore')
+
+    # Supprimer les lignes de Q5 qui contiennent 'Student', 'Other' ou 'Currently not employed'
+    df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
+
+    # Supprimer les lignes avec des NaN dans la colonne 'Q5'
+    df = df.dropna(subset=['Q5'])
+
+    # Traiter les NaN restants
+    df = df.fillna(0)  # ou utilisez df = df.fillna(df.median()) pour remplacer les NaNs par la médiane de chaque colonne
 
     # Diviser le dataframe en variables explicatives (X) et variable cible (y)
     y = df['Q5']
@@ -530,14 +546,14 @@ with tabs[5]:
     # S'assurer que les colonnes existent dans X_train
     missing_columns = [col for col in columns_to_encode + numeric_columns if col not in X_train.columns]
     if missing_columns:
-        raise ValueError(f"Colonnes manquantes dans X_train: {missing_columns}")
+      raise ValueError(f"Colonnes manquantes dans X_train: {missing_columns}")
 
     # Créer le préprocesseur
     preprocessor = ColumnTransformer(
-        transformers=[
-            ('cat', OneHotEncoder(handle_unknown='ignore'), columns_to_encode),
-            ('num', StandardScaler(), numeric_columns)
-        ])
+      transformers=[
+        ('cat', OneHotEncoder(handle_unknown='ignore'), columns_to_encode),
+        ('num', StandardScaler(), numeric_columns)
+    ])
 
     # Appliquer le préprocesseur aux données d'entraînement et de test
     X_train_transformed = preprocessor.fit_transform(X_train)
@@ -546,8 +562,8 @@ with tabs[5]:
     # Ajouter les colonnes manquantes avec des valeurs par défaut (par exemple, NaN ou vides)
     all_columns = ['Q4', 'Q32', 'Q11', 'Q30', 'Q38', 'Q15', 'Q6', 'Q13', 'Q7', 'Q8']
     for col in all_columns:
-        if col not in user_input:
-            user_input[col] = ''  # Vous pouvez également utiliser `None` ou `np.nan` selon votre prétraitement
+       if col not in user_input:
+         user_input[col] = ''  # Vous pouvez également utiliser `None` ou `np.nan` selon votre prétraitement
 
     # Créer un DataFrame avec les colonnes manquantes remplies
     user_df = pd.DataFrame([user_input])
@@ -556,13 +572,13 @@ with tabs[5]:
     user_df_transformed = preprocessor.transform(user_df)
 
     if st.button("Prédire le métier"):
-        # S'assurer que le modèle est entraîné
-        model.fit(X_train_transformed, y_train)
-        # Prédire le métier en fonction des compétences techniques
-        prediction = model.predict(user_df_transformed)
-        predicted_job = prediction[0]
-        st.write(f"Votre métier prédit dans le domaine de la Data est : **{predicted_job}**")
-        
+      # S'assurer que le modèle est entraîné
+      model.fit(X_train_transformed, y_train)
+    # Prédire le métier en fonction des compétences techniques
+    prediction = model.predict(user_df_transformed)
+    predicted_job = prediction[0]
+    st.write(f"Votre métier prédit dans le domaine de la Data est : **{predicted_job}**")
+
 # --- Conclusion ---
 with tabs[6]:
     st.header("Conclusion")
