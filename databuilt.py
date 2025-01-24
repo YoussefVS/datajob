@@ -476,8 +476,8 @@ with tabs[4]:
         # Matrice de confusion
         cm = confusion_matrix(y_test, y_pred)
         plt.figure(figsize=(8, 6))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                    xticklabels=np.unique(y_test), 
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                    xticklabels=np.unique(y_test),
                     yticklabels=np.unique(y_test))
         plt.xlabel('Predicted')
         plt.ylabel('Actual')
@@ -492,8 +492,6 @@ with tabs[4]:
             accuracy = evaluate_model(model, model_choice)
         else:
             st.error("Les données d'entraînement ne sont pas disponibles. Veuillez les charger et prétraiter.")
-
-
 
 with tabs[5]:
     st.header("Demo : Prédiction de Métier basé sur les compétences techniques")
@@ -514,55 +512,57 @@ with tabs[5]:
         'visualization_columns': ','.join(outils_virtualisation)  # Outils de virtualisation
     }
 
+    # Charger les données et préparer X_train, X_test
+    df = pd.read_csv('datajob.csv')
+    df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
 
-   # Charger les données et préparer X_train, X_test
-df = pd.read_csv('datajob.csv')
-df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
+    # Diviser le dataframe en variables explicatives (X) et variable cible (y)
+    y = df['Q5']
+    X = df.drop('Q5', axis=1)
 
-# Diviser le dataframe en variables explicatives (X) et variable cible (y)
-y = df['Q5']
-X = df.drop('Q5', axis=1)
+    # Train test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=48)
 
-# Train test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=48)
+    # Définir les colonnes à encoder et les colonnes numériques
+    columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
+    numeric_columns = X_train.select_dtypes(include=['float64', 'int64']).columns.tolist()
 
-# Définir les colonnes à encoder et les colonnes numériques
-columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
-numeric_columns = X_train.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    # S'assurer que les colonnes existent dans X_train
+    missing_columns = [col for col in columns_to_encode + numeric_columns if col not in X_train.columns]
+    if missing_columns:
+        raise ValueError(f"Colonnes manquantes dans X_train: {missing_columns}")
 
-# S'assurer que les colonnes existent dans X_train
-missing_columns = [col for col in columns_to_encode + numeric_columns if col not in X_train.columns]
-if missing_columns:
-    raise ValueError(f"Colonnes manquantes dans X_train: {missing_columns}")
+    # Créer le préprocesseur
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('cat', OneHotEncoder(handle_unknown='ignore'), columns_to_encode),
+            ('num', StandardScaler(), numeric_columns)
+        ])
 
-# Créer le préprocesseur
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('cat', OneHotEncoder(handle_unknown='ignore'), columns_to_encode),
-        ('num', StandardScaler(), numeric_columns)
-    ])
+    # Appliquer le préprocesseur aux données d'entraînement et de test
+    X_train_transformed = preprocessor.fit_transform(X_train)
+    X_test_transformed = preprocessor.transform(X_test)
 
-# Appliquer le préprocesseur aux données d'entraînement et de test
-X_train_transformed = preprocessor.fit_transform(X_train)
-X_test_transformed = preprocessor.transform(X_test)
+    # Ajouter les colonnes manquantes avec des valeurs par défaut (par exemple, NaN ou vides)
+    all_columns = ['Q4', 'Q32', 'Q11', 'Q30', 'Q38', 'Q15', 'Q6', 'Q13', 'Q7', 'Q8']
+    for col in all_columns:
+        if col not in user_input:
+            user_input[col] = ''  # Vous pouvez également utiliser `None` ou `np.nan` selon votre prétraitement
 
-# Ajouter les colonnes manquantes avec des valeurs par défaut (par exemple, NaN ou vides)
-all_columns = ['Q4', 'Q32', 'Q11', 'Q30', 'Q38', 'Q15', 'Q6', 'Q13', 'Q7', 'Q8']
-for col in all_columns:
-    if col not in user_input:
-        user_input[col] = ''  # Vous pouvez également utiliser `None` ou `np.nan` selon votre prétraitement
+    # Créer un DataFrame avec les colonnes manquantes remplies
+    user_df = pd.DataFrame([user_input])
 
-# Créer un DataFrame avec les colonnes manquantes remplies
-user_df = pd.DataFrame([user_input])
+    # Appliquer le même prétraitement que pour les données d'entraînement
+    user_df_transformed = preprocessor.transform(user_df)
 
-# Appliquer le même prétraitement que pour les données d'entraînement
-user_df_transformed = preprocessor.transform(user_df)
-
-if st.button("Prédire le métier"):
-    # Prédire le métier en fonction des compétences techniques
-    prediction = model.predict(user_df_transformed)
-    predicted_job = prediction[0]
-    st.write(f"Votre métier prédit dans le domaine de la Data est : **{predicted_job}**")
+    if st.button("Prédire le métier"):
+        # S'assurer que le modèle est entraîné
+        model.fit(X_train_transformed, y_train)
+        # Prédire le métier en fonction des compétences techniques
+        prediction = model.predict(user_df_transformed)
+        predicted_job = prediction[0]
+        st.write(f"Votre métier prédit dans le domaine de la Data est : **{predicted_job}**")
+        
 # --- Conclusion ---
 with tabs[6]:
     st.header("Conclusion")
