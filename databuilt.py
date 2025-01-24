@@ -347,7 +347,7 @@ with tabs[3]:
     - Cet équilibrage garantit que l'algorithme ne privilégie pas une classe au détriment des autres.
   """)
 
-    # Étape 5 : Mise à l'échelle des données
+    # Étape 5 : Mise à l'échelle des données 
     st.subheader("5. Mise à l’échelle des données")
       st.write("""
     - Les données ont été standardisées à l'aide de `StandardScaler` pour :
