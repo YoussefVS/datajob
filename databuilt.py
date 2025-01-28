@@ -508,7 +508,7 @@ with tabs[4]:
         accuracy = accuracy_score(y_test, y_pred)
         st.subheader(f"Performance du modèle : {model_name}")
         st.write(f"Précision : {accuracy:.2f}")
-        st.text(classification_report(y_test, y_pred, zero_division=0))
+        st.text(classification_report(y_test, y_pred))
 
         # Matrice de confusion
         cm = confusion_matrix(y_test, y_pred)
