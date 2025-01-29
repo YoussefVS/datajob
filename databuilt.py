@@ -504,11 +504,16 @@ with tabs[4]:
     def evaluate_model(model, model_name):
         model.fit(X_train_transformed, y_train)
         y_pred = model.predict(X_test_transformed)
+        accuracy = accuracy_score(y_test, y_pred)
+        report = classification_report(y_test, y_pred, output_dict=True)
 
+        # Affichage des metrics dans un tableau
+        metrics_df = pd.DataFrame(report).transpose()
+        
         accuracy = accuracy_score(y_test, y_pred)
         st.subheader(f"Performance du modèle : {model_name}")
         st.write(f"Précision : {accuracy:.2f}")
-        st.text(classification_report(y_test, y_pred))
+        st.dataframe(metrics_df)
 
         # Matrice de confusion
         cm = confusion_matrix(y_test, y_pred)
