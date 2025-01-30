@@ -594,7 +594,6 @@ with tabs[5]:
         }])
     
     # Ensure user_data has the same columns as the training data
-    user_data[categorical_cols] = user_data[categorical_cols].apply(lambda x: x.str.split(','))
     user_data_encoded = encoder.transform(user_data[categorical_cols])
     user_data_scaled = scaler.transform(user_data_encoded)
     prediction = model.predict(user_data_scaled)
