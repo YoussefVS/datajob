@@ -537,27 +537,41 @@ with tabs[4]:
 
 #interface utlisateur 
 with tabs[5]:
+
 # Interface Streamlit
-    st.title("Formulaire de Démonstration")
+st.title("Formulaire de Démonstration")
 
 st.header("Prédiction des Métiers dans le Domaine de la Data")
 st.write("Ce formulaire permet de prédire les métiers dans le domaine de la data en fonction des compétences et des expériences des utilisateurs.")
 
 # Formulaire de saisie des données utilisateur
 with st.form(key='user_form'):
-    age = st.selectbox("Âge", options=["18-21", "22-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-69", "70+"])
-    gender = st.selectbox("Genre", options=["Male", "Female", "Prefer not to say", "Other"])
-    education = st.selectbox("Niveau de Diplôme", options=["Bachelor’s degree", "Master’s degree", "Doctoral degree", "Professional degree", "Some college/university study without earning a bachelor's degree", "I prefer not to answer"])
-    job_category = st.selectbox("Catégorie de Travail", options=["Data Analyst", "Data Scientist", "Data Engineer", "ML Engineer", "Software Engineer", "Business Analyst", "Statistician"])
+    languages = st.multiselect("Langages de programmation (Q7)", options=[
+        "Python", "R", "SQL", "C", "C++", "Java", "Javascript", "Julia", "Swift", "Bash", "MATLAB", "Autre"
+    ])
+    ide = st.multiselect("Environnements de développement intégré (IDE) (Q9)", options=[
+        "Jupyter (JupyterLab, Jupyter Notebooks, etc)", "RStudio", "Visual Studio", "VSCode (Visual Studio Code)", "PyCharm", "Spyder", 
+        "Notepad++", "Sublime Text", "Vim / Emacs", "MATLAB", "Autre"
+    ])
+    visualization_tools = st.multiselect("Outils de visualisation (Q14)", options=[
+        "Matplotlib", "Seaborn", "Plotly / Plotly Express", "Ggplot2", "Shiny", "D3.js", "Altair", "Bokeh", 
+        "Geoplotlib", "Dash", "Autre"
+    ])
     submit_button = st.form_submit_button(label='Soumettre')
 
 # Prédiction basée sur les données saisies
-    if submit_button:
-        user_data = pd.DataFrame([[age, gender, education, job_category]], columns=['Q1', 'Q2', 'Q4', 'Q5'])
-        user_data_encoded = encoder.transform(user_data)
-        user_data_scaled = scaler.transform(user_data_encoded)
-        prediction = model.predict(user_data_scaled)
-        st.write(f"Recommandation : {prediction[0]}")
+if submit_button:
+    user_data = pd.DataFrame([{
+        'Q7': ','.join(languages), 
+        'Q9': ','.join(ide), 
+        'Q14': ','.join(visualization_tools)
+    }])
+    
+    # Ensure user_data has the same columns as the training data
+    user_data_encoded = encoder.transform(user_data[categorical_cols])
+    user_data_scaled = scaler.transform(user_data_encoded)
+    prediction = model.predict(user_data_scaled)
+    st.write(f"Recommandation : {prediction[0]}")
     
 # --- Conclusion ---
 with tabs[6]:
