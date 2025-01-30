@@ -535,54 +535,29 @@ with tabs[4]:
         else:
             st.error("Les données d'entraînement ne sont pas disponibles. Veuillez les charger et prétraiter.")
 
-# interface utlisateur 
+#interface utlisateur 
 with tabs[5]:
-    
-# Prétraitement des données
-df = df.drop(columns=['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3'])
-df = df.dropna(subset=['Q5'])
-df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
-
-# Encodage et mise à l'échelle
-y = df['Q5']
-X = df.drop('Q5', axis=1)
-encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
-X_encoded = encoder.fit_transform(X.select_dtypes(include=['object']))
-X = np.hstack((X.select_dtypes(exclude=['object']).values, X_encoded))
-
-scaler = StandardScaler()
-X = scaler.fit_transform(X)
-
-# Séparation des données en ensembles d'entraînement et de test
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=48)
-
-# Modélisation
-model = RandomForestClassifier(random_state=42)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-
 # Interface Streamlit
-st.title("Formulaire de Démonstration")
+    st.title("Formulaire de Démonstration")
 
 st.header("Prédiction des Métiers dans le Domaine de la Data")
 st.write("Ce formulaire permet de prédire les métiers dans le domaine de la data en fonction des compétences et des expériences des utilisateurs.")
 
 # Formulaire de saisie des données utilisateur
-with st.form(key='user_form'):
-    age = st.selectbox("Âge", options=["18-21", "22-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-69", "70+"])
-    gender = st.selectbox("Genre", options=["Male", "Female", "Prefer not to say", "Other"])
-    education = st.selectbox("Niveau de Diplôme", options=["Bachelor’s degree", "Master’s degree", "Doctoral degree", "Professional degree", "Some college/university study without earning a bachelor's degree", "I prefer not to answer"])
-    job_category = st.selectbox("Catégorie de Travail", options=["Data Analyst", "Data Scientist", "Data Engineer", "ML Engineer", "Software Engineer", "Business Analyst", "Statistician"])
-    submit_button = st.form_submit_button(label='Soumettre')
+    with st.form(key='user_form'):
+        age = st.selectbox("Âge", options=["18-21", "22-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-69", "70+"])
+        gender = st.selectbox("Genre", options=["Male", "Female", "Prefer not to say", "Other"])
+        education = st.selectbox("Niveau de Diplôme", options=["Bachelor’s degree", "Master’s degree", "Doctoral degree", "Professional degree", "Some college/university study without earning a bachelor's degree", "I prefer not to answer"])
+        job_category = st.selectbox("Catégorie de Travail", options=["Data Analyst", "Data Scientist", "Data Engineer", "ML Engineer", "Software Engineer", "Business Analyst", "Statistician"])
+        submit_button = st.form_submit_button(label='Soumettre')
 
 # Prédiction basée sur les données saisies
-if submit_button:
-    user_data = pd.DataFrame([[age, gender, education, job_category]], columns=['Q1', 'Q2', 'Q4', 'Q5'])
-    user_data_encoded = encoder.transform(user_data)
-    user_data_scaled = scaler.transform(user_data_encoded)
-    prediction = model.predict(user_data_scaled)
-    st.write(f"Recommandation : {prediction[0]}")
+    if submit_button:
+        user_data = pd.DataFrame([[age, gender, education, job_category]], columns=['Q1', 'Q2', 'Q4', 'Q5'])
+        user_data_encoded = encoder.transform(user_data)
+        user_data_scaled = scaler.transform(user_data_encoded)
+        prediction = model.predict(user_data_scaled)
+        st.write(f"Recommandation : {prediction[0]}")
     
 # --- Conclusion ---
 with tabs[6]:
