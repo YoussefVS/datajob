@@ -543,7 +543,33 @@ with tabs[5]:
 
     st.header("Prédiction des Métiers dans le Domaine de la Data")
     st.write("Ce formulaire permet de prédire les métiers dans le domaine de la data en fonction des compétences et des expériences des utilisateurs.")
+ #Prétraitement des données
+    columns_to_drop = ['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3']
+    df = df.drop(columns=columns_to_drop, errors='ignore')
+    df = df.dropna(subset=['Q5'])
+    df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
 
+    # Encodage et mise à l'échelle
+    y = df['Q5']
+    X = df.drop('Q5', axis=1)
+    categorical_cols = X.select_dtypes(include=['object']).columns.tolist()
+    encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+    X_encoded = encoder.fit_transform(X[categorical_cols])
+    X = np.hstack((X.drop(columns=categorical_cols).values, X_encoded))
+
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
+
+    # Séparation des données en ensembles d'entraînement et de test
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=48)
+
+    # Modélisation
+    model = RandomForestClassifier(random_state=42)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+
+    
 # Formulaire de saisie des données utilisateur
     with st.form(key='user_form'):
         languages = st.multiselect("Langages de programmation (Q7)", options=[
