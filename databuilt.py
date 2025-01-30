@@ -586,17 +586,20 @@ with tabs[5]:
         submit_button = st.form_submit_button(label='Soumettre')
 
 # Prédiction basée sur les données saisies
-    if submit_button:
-        user_data = pd.DataFrame([{
-            'Q7': ','.join(languages), 
-            'Q9': ','.join(ide), 
-            'Q14': ','.join(visualization_tools)
-        }])
+if submit_button:
+    user_data = pd.DataFrame([{
+        'Q7': ','.join(languages), 
+        'Q9': ','.join(ide), 
+        'Q14': ','.join(visualization_tools)
+    }])
     
-   # Ensure user_data has the same columns as the training data
+    # Ensure user_data has the same columns as the training data
     for col in categorical_cols:
         if col not in user_data.columns:
             user_data[col] = ""
+    
+    # Convert all categorical columns to strings to avoid type issues
+    user_data[categorical_cols] = user_data[categorical_cols].astype(str)
 
     user_data_encoded = encoder.transform(user_data[categorical_cols])
     user_data_scaled = scaler.transform(user_data_encoded)
