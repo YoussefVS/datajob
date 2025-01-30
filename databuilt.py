@@ -593,7 +593,11 @@ with tabs[5]:
             'Q14': ','.join(visualization_tools)
         }])
     
-    # Ensure user_data has the same columns as the training data
+   # Ensure user_data has the same columns as the training data
+    for col in categorical_cols:
+        if col not in user_data.columns:
+            user_data[col] = ""
+
     user_data_encoded = encoder.transform(user_data[categorical_cols])
     user_data_scaled = scaler.transform(user_data_encoded)
     prediction = model.predict(user_data_scaled)
