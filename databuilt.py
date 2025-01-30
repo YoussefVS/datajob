@@ -544,12 +544,12 @@ st.header("Prédiction des Métiers dans le Domaine de la Data")
 st.write("Ce formulaire permet de prédire les métiers dans le domaine de la data en fonction des compétences et des expériences des utilisateurs.")
 
 # Formulaire de saisie des données utilisateur
-    with st.form(key='user_form'):
-        age = st.selectbox("Âge", options=["18-21", "22-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-69", "70+"])
-        gender = st.selectbox("Genre", options=["Male", "Female", "Prefer not to say", "Other"])
-        education = st.selectbox("Niveau de Diplôme", options=["Bachelor’s degree", "Master’s degree", "Doctoral degree", "Professional degree", "Some college/university study without earning a bachelor's degree", "I prefer not to answer"])
-        job_category = st.selectbox("Catégorie de Travail", options=["Data Analyst", "Data Scientist", "Data Engineer", "ML Engineer", "Software Engineer", "Business Analyst", "Statistician"])
-        submit_button = st.form_submit_button(label='Soumettre')
+with st.form(key='user_form'):
+    age = st.selectbox("Âge", options=["18-21", "22-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-69", "70+"])
+    gender = st.selectbox("Genre", options=["Male", "Female", "Prefer not to say", "Other"])
+    education = st.selectbox("Niveau de Diplôme", options=["Bachelor’s degree", "Master’s degree", "Doctoral degree", "Professional degree", "Some college/university study without earning a bachelor's degree", "I prefer not to answer"])
+    job_category = st.selectbox("Catégorie de Travail", options=["Data Analyst", "Data Scientist", "Data Engineer", "ML Engineer", "Software Engineer", "Business Analyst", "Statistician"])
+    submit_button = st.form_submit_button(label='Soumettre')
 
 # Prédiction basée sur les données saisies
     if submit_button:
