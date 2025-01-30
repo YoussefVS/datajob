@@ -539,10 +539,10 @@ with tabs[4]:
 with tabs[5]:
 
 # Interface Streamlit
-st.title("Formulaire de Démonstration")
+    st.title("Formulaire de Démonstration")
 
-st.header("Prédiction des Métiers dans le Domaine de la Data")
-st.write("Ce formulaire permet de prédire les métiers dans le domaine de la data en fonction des compétences et des expériences des utilisateurs.")
+    st.header("Prédiction des Métiers dans le Domaine de la Data")
+    st.write("Ce formulaire permet de prédire les métiers dans le domaine de la data en fonction des compétences et des expériences des utilisateurs.")
 
 # Formulaire de saisie des données utilisateur
 with st.form(key='user_form'):
