@@ -538,52 +538,65 @@ with tabs[4]:
 #interface utlisateur 
 with tabs[5]:
 
+import streamlit as st
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
 # Interface Streamlit
-    st.title("Formulaire de Démonstration")
+st.title("Formulaire de Démonstration")
+st.header("Prédiction des Métiers dans le Domaine de la Data")
+st.write("Ce formulaire permet de prédire les métiers en fonction des compétences et des expériences des utilisateurs.")
 
-    st.header("Prédiction des Métiers dans le Domaine de la Data")
-    st.write("Ce formulaire permet de prédire les métiers dans le domaine de la data en fonction des compétences et des expériences des utilisateurs.")
- #Prétraitement des données
-    columns_to_drop = ['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3']
-    df = df.drop(columns=columns_to_drop, errors='ignore')
-    df = df.dropna(subset=['Q5'])
-    df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
+# Chargement et prétraitement des données
+df = pd.read_csv("datajob.csv")  # Assurez-vous que le fichier CSV est bien présent
 
-    # Encodage et mise à l'échelle
-    y = df['Q5']
-    X = df.drop('Q5', axis=1)
-    categorical_cols = X.select_dtypes(include=['object']).columns.tolist()
-    encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
-    X_encoded = encoder.fit_transform(X[categorical_cols])
-    X = np.hstack((X.drop(columns=categorical_cols).values, X_encoded))
+columns_to_drop = ['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3']
+df = df.drop(columns=columns_to_drop, errors='ignore')
+df = df.dropna(subset=['Q5'])
+df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
 
-    scaler = StandardScaler()
-    X = scaler.fit_transform(X)
+# Encodage et mise à l'échelle
+y = df['Q5']
+X = df.drop('Q5', axis=1)
+categorical_cols = X.select_dtypes(include=['object']).columns.tolist()
 
-    # Séparation des données en ensembles d'entraînement et de test
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=48)
+encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+X_encoded = encoder.fit_transform(X[categorical_cols])
+X_encoded_df = pd.DataFrame(X_encoded, columns=encoder.get_feature_names_out(categorical_cols))
 
-    # Modélisation
-    model = RandomForestClassifier(random_state=42)
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
+X = np.hstack((X.drop(columns=categorical_cols).values, X_encoded))
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-    
+# Séparation des données
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25, random_state=48)
+
+# Modélisation
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+
+st.write(f"Précision du modèle : {accuracy:.2f}")
+
 # Formulaire de saisie des données utilisateur
-    with st.form(key='user_form'):
-        languages = st.multiselect("Langages de programmation (Q7)", options=[
-            "Python", "R", "SQL", "C", "C++", "Java", "Javascript", "Julia", "Swift", "Bash", "MATLAB", "Autre"
-        ])
-        ide = st.multiselect("Environnements de développement intégré (IDE) (Q9)", options=[
-            "Jupyter (JupyterLab, Jupyter Notebooks, etc)", "RStudio", "Visual Studio", "VSCode (Visual Studio Code)", "PyCharm", "Spyder", 
-            "Notepad++", "Sublime Text", "Vim / Emacs", "MATLAB", "Autre"
-        ])
-        visualization_tools = st.multiselect("Outils de visualisation (Q14)", options=[
-            "Matplotlib", "Seaborn", "Plotly / Plotly Express", "Ggplot2", "Shiny", "D3.js", "Altair", "Bokeh", 
-            "Geoplotlib", "Dash", "Autre"
-        ])
-        submit_button = st.form_submit_button(label='Soumettre')
+with st.form(key='user_form'):
+    languages = st.multiselect("Langages de programmation (Q7)", options=[
+        "Python", "R", "SQL", "C", "C++", "Java", "Javascript", "Julia", "Swift", "Bash", "MATLAB", "Autre"
+    ])
+    ide = st.multiselect("Environnements de développement intégré (IDE) (Q9)", options=[
+        "Jupyter (JupyterLab, Jupyter Notebooks, etc)", "RStudio", "Visual Studio", "VSCode (Visual Studio Code)",
+        "PyCharm", "Spyder", "Notepad++", "Sublime Text", "Vim / Emacs", "MATLAB", "Autre"
+    ])
+    visualization_tools = st.multiselect("Outils de visualisation (Q14)", options=[
+        "Matplotlib", "Seaborn", "Plotly / Plotly Express", "Ggplot2", "Shiny", "D3.js", "Altair", "Bokeh",
+        "Geoplotlib", "Dash", "Autre"
+    ])
+    submit_button = st.form_submit_button(label='Soumettre')
 
 # Prédiction basée sur les données saisies
 if submit_button:
@@ -592,19 +605,28 @@ if submit_button:
         'Q9': ','.join(ide), 
         'Q14': ','.join(visualization_tools)
     }])
-    
-    # Ensure user_data has the same columns as the training data
+
+    # S'assurer que toutes les colonnes sont présentes
     for col in categorical_cols:
         if col not in user_data.columns:
             user_data[col] = ""
-    
-    # Convert all categorical columns to strings to avoid type issues
+
+    # Convertir en type string pour éviter les erreurs
     user_data[categorical_cols] = user_data[categorical_cols].astype(str)
 
+    # Encodage cohérent avec l'entraînement
     user_data_encoded = encoder.transform(user_data[categorical_cols])
-    user_data_scaled = scaler.transform(user_data_encoded)
+    user_data_encoded_df = pd.DataFrame(user_data_encoded, columns=encoder.get_feature_names_out(categorical_cols))
+
+    # Aligner les colonnes avec celles du modèle
+    user_data_encoded_df = user_data_encoded_df.reindex(columns=X_encoded_df.columns, fill_value=0)
+
+    # Appliquer la mise à l'échelle
+    user_data_scaled = scaler.transform(user_data_encoded_df)
+
+    # Prédiction
     prediction = model.predict(user_data_scaled)
-    st.write(f"Recommandation : {prediction[0]}")
+    st.write(f"Recommandation : {prediction[0]}") 
     
 # --- Conclusion ---
 with tabs[6]:
