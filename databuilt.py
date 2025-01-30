@@ -553,7 +553,7 @@ with tabs[5]:
     y = df['Q5']
     X = df.drop('Q5', axis=1)
     categorical_cols = X.select_dtypes(include=['object']).columns.tolist()
-    encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+    encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
     X_encoded = encoder.fit_transform(X[categorical_cols])
     X = np.hstack((X.drop(columns=categorical_cols).values, X_encoded))
 
