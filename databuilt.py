@@ -536,7 +536,7 @@ with tabs[4]:
             st.error("Les données d'entraînement ne sont pas disponibles. Veuillez les charger et prétraiter.")
 
 # interface utlisateur 
-with tabs[6]:
+with tabs[5]:
     
 # Prétraitement des données
 df = df.drop(columns=['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3'])
