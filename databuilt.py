@@ -537,17 +537,7 @@ with tabs[4]:
 
 # interface utlisateur 
 with tabs[6]:
-    import streamlit as st
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-
-# Charger les données
-df = pd.read_csv('datajob.csv')
-
+    
 # Prétraitement des données
 df = df.drop(columns=['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3'])
 df = df.dropna(subset=['Q5'])
@@ -556,7 +546,7 @@ df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currentl
 # Encodage et mise à l'échelle
 y = df['Q5']
 X = df.drop('Q5', axis=1)
-encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
 X_encoded = encoder.fit_transform(X.select_dtypes(include=['object']))
 X = np.hstack((X.select_dtypes(exclude=['object']).values, X_encoded))
 
@@ -593,6 +583,7 @@ if submit_button:
     user_data_scaled = scaler.transform(user_data_encoded)
     prediction = model.predict(user_data_scaled)
     st.write(f"Recommandation : {prediction[0]}")
+    
 # --- Conclusion ---
 with tabs[6]:
     st.header("Conclusion")
