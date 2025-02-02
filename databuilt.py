@@ -639,8 +639,10 @@ if submit_button:
 
     # Prédiction
     prediction = model.predict(user_data_scaled)
-    st.write(f"Recommandation : {prediction[0]}") 
+    st.write(f"Recommandation : {prediction[0]}")
     
+
+   
 # --- Conclusion ---
 with tabs[6]:
     st.header("Conclusion")
