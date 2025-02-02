@@ -483,15 +483,16 @@ with tabs[3]:
    # --- Modélisation ---
 with tabs[4]:
     st.header("Modélisation")
-    st.write(""" L'analyse exploratoire des données a commencé par une ACP (Analyse en Composantes Principales) pour comprendre la structure du dataset. Les résultats montrent que l'information est répartie de manière homogène sur l’ensemble des variables, sans qu’un sous-ensemble dominant n’émerge. Après réduction de la dimensionnalité, le clustering via K-Means a révélé que trois clusters constituaient un bon compromis pour segmenter les données, bien que les professions se chevauchent en raison de compétences communes.
+    st.write(""" 
+    L'analyse exploratoire des données a commencé par une ACP (Analyse en Composantes Principales) pour comprendre la structure du dataset. Les résultats montrent que l'information est répartie de manière homogène sur l’ensemble des variables, sans qu’un sous-ensemble dominant n’émerge. Après réduction de la dimensionnalité, le clustering via K-Means a révélé que trois clusters constituaient un bon compromis pour segmenter les données, bien que les professions se chevauchent en raison de compétences communes.
 
-Ensuite, quatre algorithmes de classification supervisée ont été testés pour prédire les métiers :
+    Ensuite, quatre algorithmes de classification supervisée ont été testés pour prédire les métiers :
 
-Arbre de décision : Précision de 69 %, avec des confusions notables entre Data Scientist et Data Analyst.
-Random Forest : Meilleur modèle avec une précision de 84 %, offrant une classification plus robuste.
-XGBoost : Précision de 79 %, performant mais nécessitant une optimisation des hyperparamètres.
-SVM : Moins efficace (63 %), souffrant de confusions entre professions aux frontières floues.
-L’optimisation des hyperparamètres via GridSearchCV nous a permis d'atteindre renforcé les performances de Random Forest (84 %) 
+    Arbre de décision : Précision de 69 %, avec des confusions notables entre Data Scientist et Data Analyst.
+    Random Forest : Meilleur modèle avec une précision de 84 %, offrant une classification plus robuste.
+    XGBoost : Précision de 79 %, performant mais nécessitant une optimisation des hyperparamètres.
+    SVM : Moins efficace (63 %), souffrant de confusions entre professions aux frontières floues.
+    L’optimisation des hyperparamètres via GridSearchCV nous a permis d'atteindre renforcé les performances de Random Forest (84 %) 
     """)
     # Sélection du modèle
     model_choice = st.selectbox(
