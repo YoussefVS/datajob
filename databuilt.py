@@ -585,6 +585,9 @@ X_scaled = scaler.fit_transform(X)
 # Séparation des données
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25, random_state=48)
 
+# Fitting the model
+model.fit(X_train_transformed, y_train)
+
 # Modélisation
 model = RandomForestClassifier(random_state=42)
 model.fit(X_train, y_train)
