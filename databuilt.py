@@ -487,11 +487,11 @@ with tabs[4]:
 
 Ensuite, quatre algorithmes de classification supervisée ont été testés pour prédire les métiers :
 
-Arbre de décision : Précision de 81 %, avec des confusions notables entre Data Scientist et Data Analyst.
-Random Forest : Meilleur modèle avec une précision de 86 %, offrant une classification plus robuste.
+Arbre de décision : Précision de 69 %, avec des confusions notables entre Data Scientist et Data Analyst.
+Random Forest : Meilleur modèle avec une précision de 84 %, offrant une classification plus robuste.
 XGBoost : Précision de 79 %, performant mais nécessitant une optimisation des hyperparamètres.
-SVM : Moins efficace (73 %), souffrant de confusions entre professions aux frontières floues.
-L’optimisation des hyperparamètres via GridSearchCV a renforcé les performances de Random Forest (86,5 %) 
+SVM : Moins efficace (63 %), souffrant de confusions entre professions aux frontières floues.
+L’optimisation des hyperparamètres via GridSearchCV nous a permis d'atteindre renforcé les performances de Random Forest (84 %) 
     """)
     # Sélection du modèle
     model_choice = st.selectbox(
