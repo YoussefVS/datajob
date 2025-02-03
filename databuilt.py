@@ -549,44 +549,52 @@ with st.tabs()[5]:
         submit_button = st.form_submit_button(label='Soumettre')
 
     # Prédiction basée sur les données saisies
-    # Supposons que lors de l'entraînement, vous aviez défini la liste complète des colonnes de features :
-full_feature_columns = list(X_train_full.columns)
+    if submit_button:
+        # Créer un dataframe partiel avec les informations saisies par l'utilisateur
+        user_data = pd.DataFrame([{
+            'Q7': ','.join(languages), 
+            'Q9': ','.join(ide), 
+            'Q14': ','.join(visualization_tools)
+        }])
 
-# Pour la partie utilisateur, on suppose que vous avez des données pour certaines colonnes (par exemple celles encodées)
-# et qu'on va compléter le reste par défaut (par exemple, 0) pour obtenir un tableau ayant le même nombre de colonnes.
+        # Pour les colonnes catégorielles attendues lors de l'entraînement, on s'assure qu'elles existent
+        # Ici, nous prenons la liste 'categorical_cols' du jeu d'entraînement
+        for col in categorical_cols:
+            if col not in user_data.columns:
+                user_data[col] = ""
+        # Convertir toutes les colonnes catégorielles en string
+        user_data[categorical_cols] = user_data[categorical_cols].astype(str)
 
-# 1. Préparer les données encodées à partir du formulaire utilisateur
-user_data = pd.DataFrame([{
-    'Q7': ','.join(languages), 
-    'Q9': ','.join(ide), 
-    'Q14': ','.join(visualization_tools)
-}])
+        # Préparer la partie encodage pour les colonnes que vous avez traité avec l'encodeur 'enc'
+        # Nous appliquons l'encodeur sur les colonnes spécifiées (ici, columns_to_encode)
+        # Attention : dans le formulaire, on n'a peut-être pas fourni toutes ces colonnes.
+        # Pour les colonnes manquantes, on crée des valeurs par défaut.
+        for col in columns_to_encode:
+            if col not in user_data.columns:
+                user_data[col] = ""
 
-# Pour être sûr que toutes les colonnes catégorielles attendues existent (selon votre entraînement)
-for col in categorical_cols:
-    if col not in user_data.columns:
-        user_data[col] = ""
-user_data[categorical_cols] = user_data[categorical_cols].astype(str)
+        # On encode les colonnes sélectionnées
+        user_data_encoded = enc.transform(user_data[columns_to_encode])
+        user_data_encoded_df = pd.DataFrame(user_data_encoded, columns=encoder.get_feature_names_out(columns_to_encode))
+        # Assurez-vous que l'ordre et le nombre de colonnes sont identiques à l'entraînement
+        user_data_encoded_df = user_data_encoded_df.reindex(columns=encoded_column_names, fill_value=0)
 
-# Pour les colonnes devant être encodées (par exemple, celles de columns_to_encode)
-for col in columns_to_encode:
-    if col not in user_data.columns:
-        user_data[col] = ""
-        
-# Encoder ces colonnes avec l'encodeur déjà entraîné (ici 'enc')
-user_data_encoded = enc.transform(user_data[columns_to_encode])
-user_data_encoded_df = pd.DataFrame(user_data_encoded, columns=encoder.get_feature_names_out(columns_to_encode))
-# S'assurer que l'ordre et le nombre de colonnes correspondent à l'entraînement
-user_data_encoded_df = user_data_encoded_df.reindex(columns=encoded_column_names, fill_value=0)
+        # Pour les autres colonnes numériques (non catégorielles) utilisées à l'entraînement, on fournit des valeurs par défaut (ici 0)
+        # On récupère la liste des colonnes numériques utilisée à l'entraînement
+        user_data_numeric_df = pd.DataFrame(np.zeros((user_data.shape[0], len(numeric_cols))), columns=numeric_cols)
 
-# 2. Pour les colonnes numériques (ou autres) qui ont été utilisées lors de l'entraînement,
-# si l'utilisateur ne fournit pas ces informations, on peut les remplir par défaut (par exemple, 0)
-user_data_numeric_df = pd.DataFrame(np.zeros((user_data.shape[0], len(numeric_cols))), columns=numeric_cols)
+        # Concaténer les parties numériques et encodées pour reconstituer le jeu complet de features
+        user_data_full = pd.concat([user_data_numeric_df, user_data_encoded_df], axis=1)
+        # Si besoin, réalignez les colonnes selon full_feature_columns
+        user_data_full = user_data_full.reindex(columns=full_feature_columns, fill_value=0)
 
-# 3. Concaténer les deux parties pour obtenir le jeu complet de features
-user_data_full = pd.concat([user_data_numeric_df, user_data_encoded_df], axis=1)
+        # Appliquer le scaler entraîné sur l'ensemble des features
+        user_data_scaled = scaler.transform(user_data_full)
 
-# 4. Réaligner les colonnes sur l'ensemble complet attendu lors de l'entraînement
+        # Prédiction avec le modèle entraîné (assurez-vous que 'model' a déjà été entraîné)
+        prediction = model.predict(user_data_scaled)
+        st.write(f"Recommandation : {prediction[0]}")
+ Réaligner les colonnes sur l'ensemble complet attendu lors de l'entraînement
 user_data_full = user_data_full.reindex(columns=full_feature_columns, fill_value=0)
 
 # 5. Appliquer le scaler entraîné sur l'ensemble complet des features
