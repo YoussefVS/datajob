@@ -362,137 +362,110 @@ with tabs[3]:
     - Le DataFrame final est prêt pour l'entraînement des modèles de machine learning.
 """)
 
-    # Supprimer les colonnes spécifiées pour éviter un ML discriminant
-    columns_to_drop = ['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3', 'Q20', 'Q21', 'Q22', 'Q24', 'Q25']
-    df = df.drop(columns=columns_to_drop, errors='ignore')
+    import pandas as pd
+import numpy as np
+import streamlit as st
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from imblearn.over_sampling import RandomOverSampler
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-    # Supprimer toutes les colonnes contenant "_A" ou "_B" dans leur nom pour simplifier le traitement
-    columns_to_drop = [col for col in df.columns if '_A' in col or '_B' in col]
-    df = df.drop(columns=columns_to_drop, errors='ignore')
+# --- Prétraitement et modélisation (Entraînement) ---
 
-    # Supprimer les lignes de Q5 qui contiennent 'Student', 'Other' ou 'Currently not employed'
-    df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
-    print(df['Q5'].value_counts())
+# Chargement des données
+df = pd.read_csv("datajob.csv")
 
-    # Supprimer les lignes avec des NaN dans la colonne 'Q5'
-    df = df.dropna(subset=['Q5'])
+# Supprimer toutes les colonnes contenant "_A" ou "_B" dans leur nom
+columns_to_drop = [col for col in df.columns if '_A' in col or '_B' in col]
+df = df.drop(columns=columns_to_drop, errors='ignore')
 
-    # Diviser le df en 2: df_choix_unique et df_choix_multiple
-    df_choix_unique = df.columns[df.nunique() <= 3]  # 3 = modalité x + modalité y + NaN
-    df_choix_multiple = df.columns[df.nunique() > 3]
+# Supprimer les lignes de Q5 spécifiques et celles avec NaN dans Q5
+df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
+df = df.dropna(subset=['Q5'])
+st.write(df['Q5'].value_counts())
 
-    # Afficher les colonnes
-    print(df_choix_multiple.to_list())
+# Séparer le dataframe en features et cible
+y = df['Q5']
+X = df.drop('Q5', axis=1)
 
-    # Pour chaque colonne de la liste "df_choix_unique", remplacer les NaN par "0" et remplacer la modalité par "1"
-    for col in df_choix_unique:
-        df[col] = df[col].fillna(0)
-        modalites = df[col].unique()
-        modalites = [modalite for modalite in modalites if modalite != 0 and not pd.isna(modalite)]
+# Rééquilibrer les classes par oversampling
+oversampler = RandomOverSampler(random_state=42) 
+X_resampled, y_resampled = oversampler.fit_resample(X, y)
+st.write(pd.Series(y_resampled).value_counts())
 
-        for modalite in modalites:
-            df[col] = df[col].replace(modalite, 1)
+X = X_resampled
+y = y_resampled
 
-    df.head()
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=48)
+st.write("Train Set:", X_train.shape)
+st.write("Test Set:", X_test.shape)
 
-    # Séparer le df en X et Y pour éviter la fuite de données du OneHotEncoder
-    from sklearn.model_selection import train_test_split
+# Encodage de la cible (pour affichage/évaluation)
+enc_target = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+enc_target.fit(np.array(y_train).reshape(-1, 1))
+y_train_encoded = np.argmax(enc_target.transform(np.array(y_train).reshape(-1, 1)), axis=1)
+y_test_encoded = np.argmax(enc_target.transform(np.array(y_test).reshape(-1, 1)), axis=1)
+st.write("Encoded y_train shape:", y_train_encoded.shape)
+st.write("Encoded y_test shape:", y_test_encoded.shape)
 
-    y = df['Q5']
-    X = df.drop('Q5', axis=1)
+# --- Prétraitement des features ---
+# On détermine quelles colonnes sont catégorielles
+categorical_cols = X_train.select_dtypes(include=['object']).columns.tolist()
+# Les colonnes non-catégorielles (numériques)
+numeric_cols = X_train.drop(columns=categorical_cols).columns.tolist()
 
-    # Rééquilibrer les classes avec oversampling
-    from imblearn.over_sampling import RandomOverSampler
+# Pour certaines colonnes spécifiques, on souhaite appliquer un OneHotEncoder
+columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
+# Ici, on va utiliser un seul encodeur pour ces colonnes
+enc = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+enc.fit(X_train[columns_to_encode])
+X_train_encoded = enc.transform(X_train[columns_to_encode])
+X_test_encoded = enc.transform(X_test[columns_to_encode])
+encoded_column_names = list(enc.get_feature_names_out(columns_to_encode))
 
-    oversampler = RandomOverSampler(random_state=42) 
-    X_resampled, y_resampled = oversampler.fit_resample(X, y)
+# Convertir les matrices encodées en DataFrame
+X_train_encoded_df = pd.DataFrame(X_train_encoded, columns=encoded_column_names, index=X_train.index)
+X_test_encoded_df = pd.DataFrame(X_test_encoded, columns=encoded_column_names, index=X_test.index)
 
-    # Vérifier la distribution après le suréchantillonnage
-    print(pd.Series(y_resampled).value_counts())
+# Supprimer les colonnes d'origine qui ont été encodées
+X_train_remaining = X_train.drop(columns=columns_to_encode)
+X_test_remaining = X_test.drop(columns=columns_to_encode)
 
-    X = X_resampled
-    y = y_resampled
+# Si vous avez un préprocesseur personnalisé, l'appliquer ici, sinon conserver les données telles quelles
+preprocessor = None
+if preprocessor is not None:
+    X_train_transformed = preprocessor.fit_transform(X_train_remaining)
+    X_test_transformed = preprocessor.transform(X_test_remaining)
+else:
+    X_train_transformed, X_test_transformed = X_train_remaining, X_test_remaining
 
-    # Train test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=48)
+# Reconstituer le jeu complet de features en concaténant les données restantes et les colonnes encodées
+X_train_full = pd.concat([pd.DataFrame(X_train_transformed, index=X_train_remaining.index, columns=X_train_remaining.columns),
+                          X_train_encoded_df], axis=1)
+X_test_full = pd.concat([pd.DataFrame(X_test_transformed, index=X_test_remaining.index, columns=X_test_remaining.columns),
+                         X_test_encoded_df], axis=1)
 
-    print("Train Set:", X_train.shape)
-    print("Test Set:", X_test.shape)
+# Normalisation avec StandardScaler sur le jeu complet
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train_full)
+X_test_scaled = scaler.transform(X_test_full)
 
-    # Encoder la variable cible avec un OneHotEncoder puis réduire la dimension à 1 pour les modélisations
-    from sklearn.preprocessing import OneHotEncoder
-    import numpy as np
+# Vous pouvez sauvegarder ici les objets 'enc', 'scaler', 'numeric_cols', 'categorical_cols', 'encoded_column_names' pour les réutiliser lors de l'inférence
 
-    # Initialiser le OneHotEncoder
-    enc = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
-
-    # Ajuster et transformer la variable cible y_train
-    enc.fit(np.array(y_train).reshape(-1, 1))
-    y_train_encoded = enc.transform(np.array(y_train).reshape(-1, 1))
-
-    # Transformer y_test avec le même encodeur
-    y_test_encoded = enc.transform(np.array(y_test).reshape(-1, 1))
-
-    # Réduire la dimension à 1 (en utilisant argmax pour obtenir l'index de la classe)
-    y_train_encoded = np.argmax(y_train_encoded, axis=1)
-    y_test_encoded = np.argmax(y_test_encoded, axis=1)
-
-    print("Encoded y_train shape:", y_train_encoded.shape)
-    print("Encoded y_test shape:", y_test_encoded.shape)
-
-    mapping = {index: label for index, label in enumerate(enc.categories_[0])}
-    mapping
-
-    # Pour les colonnes 'Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38' de X_train et X_test, appliquer un OneHotEncoder
-    columns_to_encode = ['Q4', 'Q6', 'Q8', 'Q11', 'Q13', 'Q15', 'Q30', 'Q32', 'Q38']
-    
-    enc.fit(X_train[columns_to_encode])
-
-    X_train_encoded = enc.transform(X_train[columns_to_encode])
-    X_test_encoded = enc.transform(X_test[columns_to_encode])
-
-    encoded_column_names = list(enc.get_feature_names_out(columns_to_encode))
-
-    # Créer dataframe à partir des arrays
-    X_train_encoded_df = pd.DataFrame(X_train_encoded, columns=encoded_column_names, index=X_train.index)
-    X_test_encoded_df = pd.DataFrame(X_test_encoded, columns=encoded_column_names, index=X_test.index)
-
-    # Supprimer les colonnes d'origine
-    X_train = X_train.drop(columns=columns_to_encode)
-    X_test = X_test.drop(columns=columns_to_encode)
-
-    # Prétraitement des données (à personnaliser selon vos besoins)
-    if preprocessor is not None:
-        X_train_transformed = preprocessor.fit_transform(X_train)
-        X_test_transformed = preprocessor.transform(X_test)
-    else:
-        X_train_transformed, X_test_transformed = X_train, X_test
-
-    # Définir X_train et X_test
-    X_train = pd.concat([X_train, X_train_encoded_df], axis=1)
-    X_test = pd.concat([X_test, X_test_encoded_df], axis=1)
-
-    # Normaliser avec StandardScaler X_train et X_test
-    from sklearn.preprocessing import StandardScaler
-
-    scaler = StandardScaler()
-
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
-
-   # --- Modélisation ---
-with tabs[4]:
+# --- Modélisation ---
+# Interface onglet modélisation
+with st.tabs()[4]:
     st.header("Modélisation")
     st.write("""
-    L'analyse exploratoire des données a commencé par une ACP (Analyse en Composantes Principales) pour comprendre la structure du dataset. Les résultats montrent que l'information est répartie de manière homogène sur l’ensemble des variables, sans qu’un sous-ensemble dominant n’émerge. Après réduction de la dimensionnalité, le clustering via K-Means a révélé que trois clusters constituaient un bon compromis pour segmenter les données, bien que les professions se chevauchent en raison de compétences communes.
-
-    Ensuite, quatre algorithmes de classification supervisée ont été testés pour prédire les métiers :
-
-    Arbre de décision : Précision de 69 %, avec des confusions notables entre Data Scientist et Data Analyst.
-    Random Forest : Meilleur modèle avec une précision de 84 %, offrant une classification plus robuste.
-    XGBoost : Précision de 79 %, performant mais nécessitant une optimisation des hyperparamètres.
-    SVM : Moins efficace (63 %), souffrant de confusions entre professions aux frontières floues.
-    L’optimisation des hyperparamètres via GridSearchCV nous a permis d'atteindre renforcé les performances de Random Forest (84 %) 
+    L'analyse exploratoire des données a commencé par une ACP pour comprendre la structure du dataset...
+    [Description abrégée de l'analyse et des résultats]
     """)
     # Sélection du modèle
     model_choice = st.selectbox(
@@ -507,140 +480,121 @@ with tabs[4]:
         "XGBoost": XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss'),
         "SVM": SVC(random_state=42, probability=True)
     }
-
     model = models[model_choice]
 
     # Fonction d'évaluation
     def evaluate_model(model, model_name):
-        model.fit(X_train_transformed, y_train)
-        y_pred = model.predict(X_test_transformed)
+        model.fit(X_train_scaled, y_train)
+        y_pred = model.predict(X_test_scaled)
         accuracy = accuracy_score(y_test, y_pred)
         report = classification_report(y_test, y_pred, output_dict=True)
-
-        # Affichage des metrics dans un tableau
         metrics_df = pd.DataFrame(report).transpose()
         
-        accuracy = accuracy_score(y_test, y_pred)
         st.subheader(f"Performance du modèle : {model_name}")
         st.write(f"Précision : {accuracy:.2f}")
         st.dataframe(metrics_df)
 
-        # Matrice de confusion
         cm = confusion_matrix(y_test, y_pred)
         plt.figure(figsize=(8, 6))
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                     xticklabels=np.unique(y_test),
                     yticklabels=np.unique(y_test))
-        plt.xlabel('Predicted')
-        plt.ylabel('Actual')
+        plt.xlabel('Prédiction')
+        plt.ylabel('Réel')
         plt.title(f'Matrice de Confusion : {model_name}')
         st.pyplot()
-
         return accuracy
 
-    # Évaluation du modèle sélectionné
     if st.button("Évaluer le modèle", key="evaluate_button"):
-        if 'X_train_transformed' in globals() and 'y_train' in globals():
-            accuracy = evaluate_model(model, model_choice)
-        else:
-            st.error("Les données d'entraînement ne sont pas disponibles. Veuillez les charger et prétraiter.")
+        accuracy = evaluate_model(model, model_choice)
 
-#interface utlisateur 
-with tabs[5]:
+# --- Interface utilisateur pour la prédiction ---
+with st.tabs()[5]:
+    st.title("Formulaire de Démonstration")
+    st.header("Prédiction des Métiers dans le Domaine de la Data")
+    st.write("Ce formulaire permet de prédire les métiers en fonction des compétences et expériences des utilisateurs.")
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+    # Pour la partie interface, nous devons recharger le même prétraitement
+    # Nous avons déjà les variables suivantes issues de l'entraînement : 
+    # - categorical_cols : liste des colonnes catégorielles
+    # - numeric_cols : liste des colonnes numériques (non catégorielles)
+    # - enc : OneHotEncoder entraîné sur les colonnes_to_encode (de Q4, Q6, ...)
+    # - scaler : StandardScaler entraîné sur le jeu complet
+    # - encoded_column_names : colonnes générées par l'encodeur sur columns_to_encode
 
-# Interface Streamlit
-st.title("Formulaire de Démonstration")
-st.header("Prédiction des Métiers dans le Domaine de la Data")
-st.write("Ce formulaire permet de prédire les métiers en fonction des compétences et des expériences des utilisateurs.")
+    # Dans l'interface, nous allons supposer que l'utilisateur fournit uniquement quelques informations (ex: Q7, Q9, Q14)
+    # Pour reconstituer le jeu complet de features attendu par le modèle, nous complétons les autres colonnes par des valeurs par défaut (ex: 0)
 
-# Chargement et prétraitement des données
-df = pd.read_csv("datajob.csv")  # Assurez-vous que le fichier CSV est bien présent
+    # Pour reproduire le prétraitement, on se base sur la liste des colonnes du dataframe d'entraînement complet
+    full_feature_columns = list(X_train_full.columns)
 
-columns_to_drop = ['Time from Start to Finish (seconds)', 'Q1', 'Q2', 'Q3']
-df = df.drop(columns=columns_to_drop, errors='ignore')
-df = df.dropna(subset=['Q5'])
-df = df[(df['Q5'] != 'Student') & (df['Q5'] != 'Other') & (df['Q5'] != 'Currently not employed')]
+    # Ici, on détermine quelles colonnes viennent de l'encodage et lesquelles sont numériques.
+    # Dans notre cas, les colonnes numériques sont celles de 'numeric_cols' et les autres sont issues de l'encodage
+    # Vous pouvez ajuster cette partie selon votre contexte
+    # ---
 
-# Encodage et mise à l'échelle
-y = df['Q5']
-X = df.drop('Q5', axis=1)
-categorical_cols = X.select_dtypes(include=['object']).columns.tolist()
+    # Formulaire de saisie des données utilisateur
+    with st.form(key='user_form'):
+        languages = st.multiselect("Langages de programmation (Q7)", options=[
+            "Python", "R", "SQL", "C", "C++", "Java", "Javascript", "Julia", "Swift", "Bash", "MATLAB", "Autre"
+        ])
+        ide = st.multiselect("Environnements de développement intégré (IDE) (Q9)", options=[
+            "Jupyter (JupyterLab, Jupyter Notebooks, etc)", "RStudio", "Visual Studio", "VSCode (Visual Studio Code)",
+            "PyCharm", "Spyder", "Notepad++", "Sublime Text", "Vim / Emacs", "MATLAB", "Autre"
+        ])
+        visualization_tools = st.multiselect("Outils de visualisation (Q14)", options=[
+            "Matplotlib", "Seaborn", "Plotly / Plotly Express", "Ggplot2", "Shiny", "D3.js", "Altair", "Bokeh",
+            "Geoplotlib", "Dash", "Autre"
+        ])
+        submit_button = st.form_submit_button(label='Soumettre')
 
-encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
-X_encoded = encoder.fit_transform(X[categorical_cols])
-X_encoded_df = pd.DataFrame(X_encoded, columns=encoder.get_feature_names_out(categorical_cols))
+    # Prédiction basée sur les données saisies
+    if submit_button:
+        # Créer un dataframe partiel avec les informations saisies par l'utilisateur
+        user_data = pd.DataFrame([{
+            'Q7': ','.join(languages), 
+            'Q9': ','.join(ide), 
+            'Q14': ','.join(visualization_tools)
+        }])
 
-X = np.hstack((X.drop(columns=categorical_cols).values, X_encoded))
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+        # Pour les colonnes catégorielles attendues lors de l'entraînement, on s'assure qu'elles existent
+        # Ici, nous prenons la liste 'categorical_cols' du jeu d'entraînement
+        for col in categorical_cols:
+            if col not in user_data.columns:
+                user_data[col] = ""
+        # Convertir toutes les colonnes catégorielles en string
+        user_data[categorical_cols] = user_data[categorical_cols].astype(str)
 
-# Séparation des données
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25, random_state=48)
+        # Préparer la partie encodage pour les colonnes que vous avez traité avec l'encodeur 'enc'
+        # Nous appliquons l'encodeur sur les colonnes spécifiées (ici, columns_to_encode)
+        # Attention : dans le formulaire, on n'a peut-être pas fourni toutes ces colonnes.
+        # Pour les colonnes manquantes, on crée des valeurs par défaut.
+        for col in columns_to_encode:
+            if col not in user_data.columns:
+                user_data[col] = ""
 
-# Fitting the model
-model.fit(X_train_transformed, y_train)
+        # On encode les colonnes sélectionnées
+        user_data_encoded = enc.transform(user_data[columns_to_encode])
+        user_data_encoded_df = pd.DataFrame(user_data_encoded, columns=encoder.get_feature_names_out(columns_to_encode))
+        # Assurez-vous que l'ordre et le nombre de colonnes sont identiques à l'entraînement
+        user_data_encoded_df = user_data_encoded_df.reindex(columns=encoded_column_names, fill_value=0)
 
-# Modélisation
-model = RandomForestClassifier(random_state=42)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
+        # Pour les autres colonnes numériques (non catégorielles) utilisées à l'entraînement, on fournit des valeurs par défaut (ici 0)
+        # On récupère la liste des colonnes numériques utilisée à l'entraînement
+        user_data_numeric_df = pd.DataFrame(np.zeros((user_data.shape[0], len(numeric_cols))), columns=numeric_cols)
 
-st.write(f"Précision du modèle : {accuracy:.2f}")
+        # Concaténer les parties numériques et encodées pour reconstituer le jeu complet de features
+        user_data_full = pd.concat([user_data_numeric_df, user_data_encoded_df], axis=1)
+        # Si besoin, réalignez les colonnes selon full_feature_columns
+        user_data_full = user_data_full.reindex(columns=full_feature_columns, fill_value=0)
 
-# Formulaire de saisie des données utilisateur
-with st.form(key='user_form'):
-    languages = st.multiselect("Langages de programmation (Q7)", options=[
-        "Python", "R", "SQL", "C", "C++", "Java", "Javascript", "Julia", "Swift", "Bash", "MATLAB", "Autre"
-    ])
-    ide = st.multiselect("Environnements de développement intégré (IDE) (Q9)", options=[
-        "Jupyter (JupyterLab, Jupyter Notebooks, etc)", "RStudio", "Visual Studio", "VSCode (Visual Studio Code)",
-        "PyCharm", "Spyder", "Notepad++", "Sublime Text", "Vim / Emacs", "MATLAB", "Autre"
-    ])
-    visualization_tools = st.multiselect("Outils de visualisation (Q14)", options=[
-        "Matplotlib", "Seaborn", "Plotly / Plotly Express", "Ggplot2", "Shiny", "D3.js", "Altair", "Bokeh",
-        "Geoplotlib", "Dash", "Autre"
-    ])
-    submit_button = st.form_submit_button(label='Soumettre')
+        # Appliquer le scaler entraîné sur l'ensemble des features
+        user_data_scaled = scaler.transform(user_data_full)
 
-# Prédiction basée sur les données saisies
-if submit_button:
-    user_data = pd.DataFrame([{
-        'Q7': ','.join(languages), 
-        'Q9': ','.join(ide), 
-        'Q14': ','.join(visualization_tools)
-    }])
+        # Prédiction avec le modèle entraîné (assurez-vous que 'model' a déjà été entraîné)
+        prediction = model.predict(user_data_scaled)
+        st.write(f"Recommandation : {prediction[0]}")
 
-    # S'assurer que toutes les colonnes sont présentes
-    for col in categorical_cols:
-        if col not in user_data.columns:
-            user_data[col] = ""
-
-    # Convertir en type string pour éviter les erreurs
-    user_data[categorical_cols] = user_data[categorical_cols].astype(str)
-
-    # Encodage cohérent avec l'entraînement
-    user_data_encoded = encoder.transform(user_data[categorical_cols])
-    user_data_encoded_df = pd.DataFrame(user_data_encoded, columns=encoder.get_feature_names_out(categorical_cols))
-
-    # Aligner les colonnes avec celles du modèle
-    user_data_encoded_df = user_data_encoded_df.reindex(columns=X_encoded_df.columns, fill_value=0)
-
-    # Appliquer la mise à l'échelle
-    user_data_scaled = scaler.transform(user_data_encoded_df)
-
-    # Prédiction
-    prediction = model.predict(user_data_scaled)
-    st.write(f"Recommandation : {prediction[0]}")
-    
 
    
 # --- Conclusion ---
