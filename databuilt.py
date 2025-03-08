@@ -594,8 +594,8 @@ with st.tabs()[5]:
         # Prédiction avec le modèle entraîné (assurez-vous que 'model' a déjà été entraîné)
         prediction = model.predict(user_data_scaled)
         st.write(f"Recommandation : {prediction[0]}")
- Réaligner les colonnes sur l'ensemble complet attendu lors de l'entraînement
-user_data_full = user_data_full.reindex(columns=full_feature_columns, fill_value=0)
+        Réaligner les colonnes sur l'ensemble complet attendu lors de l'entraînement
+        user_data_full = user_data_full.reindex(columns=full_feature_columns, fill_value=0)
 
 # 5. Appliquer le scaler entraîné sur l'ensemble complet des features
 user_data_scaled = scaler.transform(user_data_full)
